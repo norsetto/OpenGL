@@ -3,6 +3,7 @@
 #define BUILD_TYPE "@CMAKE_BUILD_TYPE@"
 #define SHADERS_LOCATION "@RUN_DIR@/media/shaders/"
 #define DATA_LOCATION "@RUN_DIR@/media/textures/"
+#define INPUT_LOCATION "@RUN_DIR@/media/inputs/"
 #define PIo2 1.5707963268f
 #define TAU 6.28318530718f
 #define MAX_STRING_LENGTH 255

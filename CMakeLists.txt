@@ -16,6 +16,7 @@ include_directories("${PROJECT_BINARY_DIR}")
 
 set(DEMOS
   butterfly
+  cdlod_tess
   )
 
 # Libraries
@@ -27,7 +28,10 @@ include_directories(${GLFW_INCLUDE_DIRS})
 find_package (OpenGL REQUIRED)
 include_directories(${OPENGL_INCLUDE_DIRS})
 
-set(COMMON_LIBS image ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES})
+pkg_search_module(TINYXML2 REQUIRED tinyxml2)
+include_directories(${TINYXML2_INCLUDE_DIRS})
+
+set(COMMON_LIBS image ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${TINYXML2_LIBRARIES})
 
 add_library(image SHARED src/image/image.cpp glad/glad.c)
 
