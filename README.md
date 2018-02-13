@@ -1,4 +1,4 @@
-# Project Title
+# OpenGL Demos
 A collection of simple OpenGL demos which I developed over the years.
 
 ## Demos
