@@ -1,6 +1,6 @@
 #pragma once
 
-#include "/home/cesare/testgl/common/glad.h"
+#include "glad.h"
 
 #include <string>
 #include <zlib.h>
