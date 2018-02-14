@@ -17,6 +17,7 @@ include_directories("${PROJECT_BINARY_DIR}")
 set(DEMOS
   butterfly
   cdlod_tess
+  qt-culling
   )
 
 # Libraries
@@ -31,7 +32,10 @@ include_directories(${OPENGL_INCLUDE_DIRS})
 pkg_search_module(TINYXML2 REQUIRED tinyxml2)
 include_directories(${TINYXML2_INCLUDE_DIRS})
 
-set(COMMON_LIBS image ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${TINYXML2_LIBRARIES})
+pkg_search_module(ASSIMP REQUIRED assimp)
+include_directories(${ASSIMP_INCLUDE_DIRS})
+
+set(COMMON_LIBS image ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${TINYXML2_LIBRARIES} ${ASSIMP_LIBRARIES})
 
 add_library(image SHARED src/image/image.cpp glad/glad.c)
 

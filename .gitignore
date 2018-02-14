@@ -4,6 +4,7 @@ build/
 bin/*
 !bin/media/
 bin/media/textures
+bin/media/models
 !bin/media/inputs/
 !bin/media/inputs/*
 !bin/media/shaders/
