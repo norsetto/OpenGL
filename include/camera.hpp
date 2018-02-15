@@ -35,6 +35,7 @@ public:
   void move_up(float deltaTime);
   void move_down(float deltaTime);
   void change_fov(float delta_fov);
+  void change_speed(float delta_speed);
   void rotate(float delta_x, float delta_y);
   void update(void);
   void set_proj_matrix(float aspect, float minz, float maxz);
@@ -120,6 +121,10 @@ void Camera::change_fov(float delta_fov) {
   fov += delta_fov;
   if (fov > 1.2f) fov = 1.2f;
   else if (fov < 0.01f) fov = 0.01f;
+}
+
+void Camera::change_speed(float delta_speed) {
+  speed *= delta_speed;
 }
 
 void Camera::rotate(float delta_x, float delta_y) {
