@@ -1,0 +1,17 @@
+ESCAPE: Close
+WASD: Move camera forward/backward/right/left
+QZ: Move camera up/down
+G: toggle wireframe
+U: update waves
+E: generate waves
+O/^O: raise/lower min amplitude
+M/^M: raise/lower max amplitude
+R: raise/lower roughness
+T: raise/lower wavelength
+L: lod level
+N: grid level
+V: max_distance
+P: print camera position/direction
+F: display fps
+UP/DOWN/LEFT/RIGHT: move light
+RIGHT BRACKET/LEFT BRACKET: change camera speed

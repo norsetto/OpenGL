@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='utf-8'?>
+<data>
+  <!-- initial camera world position x (right), y (up), z (from) coordinates) -->
+  <position>
+    <x>27.0</x>
+    <y>-26.0</y>
+    <z>28.0</z>
+  </position>
+  <!-- initial camera direction yaw (horizontal), pitch (vertical) in radians -->
+  <yaw>-0.92</yaw>
+  <pitch>-0.355</pitch>
+  <!-- camera speed (float) -->
+  <speed>10.0</speed>
+  <!-- max lod depth (max number of patches is 4^LOD) -->
+  <max_lod>7</max_lod>
+  <!-- max tessellation level (max tessellation is 2^GRID) -->
+  <max_grid>4</max_grid>
+  <!-- maximum viewing distance -->
+  <max_distance>160.0</max_distance>
+  <!-- water size -->
+  <water_size>64.0</water_size>
+  <!-- colour texture -->
+  <texture_file>water.png</texture_file>
+</data>

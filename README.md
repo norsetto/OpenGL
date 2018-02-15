@@ -6,6 +6,7 @@ A collection of simple OpenGL demos which I developed over the years.
 * butterfly   : dabbling with geometry shaders
 * cdlod_tess  : dabbling with tessellation shaders
 * qt-culling  : distance culling with quadtrees
+* water       : displacement with geometric waves + high frequency noise
 
 ## Built With
 
@@ -14,6 +15,7 @@ A collection of simple OpenGL demos which I developed over the years.
 * [TinyXML2](http://www.grinninglizard.com/tinyxml2/) - A simple, small, efficient C++ XML parser
 * [glm](https://glm.g-truc.net/0.9.8/index.html) - OpenGL Mathematics
 * [Assimp](http://assimp.sourceforge.net/) - Open Asset Import Library
+* [webgl-noise](https://github.com/stegu/webgl-noise) - Simplex noise function
 
 ## Acknowledgments
 [The OpenGL SuperBible](http://www.openglsuperbible.com/) - Graham Sellers, Richard S. Wright Jr., Nicholas Haemel

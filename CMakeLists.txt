@@ -18,6 +18,7 @@ set(DEMOS
   butterfly
   cdlod_tess
   qt-culling
+  water
   )
 
 # Libraries
