@@ -144,7 +144,7 @@ void main(void)
   vec4 p2 = mix(gl_in[2].gl_Position, gl_in[3].gl_Position, gl_TessCoord.x);
   vec4 p  = mix(p1, p2, gl_TessCoord.y);
 
-  vec3 wave = p.xyz;
+  vec3 wave = vec3(p.x, 0, p.z);
   vec3 normal = vec3(0.0, 1.0, 0.0);
   float sim_time = light_pos.w;
 
@@ -201,8 +201,8 @@ void main(void)
   n += 0.0625 * snoise(uvw * 16.0 - vec3(0.0, 0.0, sim_time * 4.0)); 
   n += 0.03125 * snoise(uvw * 32.0 - vec3(0.0, 0.0, sim_time * 5.6));
   
-  wave += vec3(n) * 0.05;
-  normal -= vec3(n) * 0.25;
+  wave += vec3(n) * 0.075;
+  normal += vec3(-n, 2.0 * n, -n) * 0.1;
   
   tes_out.tc = tc;
   tes_out.pos = wave;

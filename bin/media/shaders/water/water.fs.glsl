@@ -27,11 +27,11 @@ in TES_OUT
   vec3 normal;
 } fs_in;
 
-uniform vec4 water_color = vec4(0.00, 0.412, 0.58, 1.0);
-uniform float ambient_albedo = 0.1;
-uniform float diffuse_albedo = 0.4;
-uniform float specular_albedo = 0.4;
-uniform float specular_power = 10.0;
+uniform vec3 water_colour = vec3(0.62, 0.9, 0.8);
+uniform float ambient_albedo = 0.4;
+uniform float diffuse_albedo = 0.6;
+uniform float specular_albedo = 0.6;
+uniform float specular_power = 400.0;
 
 void main(void)
 {
@@ -57,7 +57,7 @@ void main(void)
   vec3 reflDir = reflect(lightDir, normDir);
   float specular_color = pow(max(dot(reflDir, viewDir), 0.0), specular_power) * specular_albedo;
 
-  //color = texture(tex_color, fs_in.tc) * (diffuse_color + specular_color + ambient_albedo);
-  color = water_color * (diffuse_color + specular_color + ambient_albedo);
-  //color = vec4(normDir, 1.0);
+  vec3 base_colour = texture(tex_color, fs_in.tc).rgb * (0.75 + (fs_in.pos.y + 0.5) * 0.25);
+  //vec3 base_colour = water_colour * (0.75 + (fs_in.pos.y + 0.5) * 0.25);
+  color = vec4(base_colour * min(diffuse_color + specular_color + ambient_albedo, 1.0), 1.0);
 }

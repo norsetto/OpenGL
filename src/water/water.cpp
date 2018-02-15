@@ -347,7 +347,7 @@ private:
     double ypos;
   } mouse;
   glm::vec4 light_pos;
-  float lightRadius = 100.0f, eLit = 0.7854f, aLit = 0.7854f, sLit = 0.01f;
+  float lightRadius = 100.0f, eLit = 0.1f, aLit = 0.7854f, sLit = 0.01f;
   float sinE, cosE, sinA, cosA;
   Camera* camera;
   GLuint waterProgram;
