@@ -47,11 +47,8 @@ uniform vec2 viewport = vec2(1920.0, 1080.0);
   //Screen Space Distance Approach
   float GetTessLevel(vec4 p0, vec4 p1) {
 
-  //Compute baricentre
-  vec4 centre = 0.5 * (p0 + p1);
-
   //Project to screen space
-  vec4 view0 = view_matrix * centre;
+  vec4 view0 = view_matrix * p0;
   vec4 view1 = view0;
   view1.x += distance(p0, p1);
 	
