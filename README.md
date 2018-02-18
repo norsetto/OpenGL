@@ -7,6 +7,7 @@ A collection of simple OpenGL demos which I developed over the years.
 * cdlod_tess  : dabbling with tessellation shaders
 * qt-culling  : distance culling with quadtrees
 * water       : displacement with geometric waves + high frequency noise
+* qt-water    : the water demo within a Qt framework
 
 ## Built With
 
