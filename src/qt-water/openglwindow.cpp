@@ -22,7 +22,7 @@
 
 MyGLWidget::MyGLWidget(QWidget *parent) : QOpenGLWidget(parent)
 {
-  setup_ui();
+  this->setFocusPolicy(Qt::ClickFocus);
   connect(&timer, SIGNAL(timeout()), this, SLOT(update()));
   timer.setInterval(0);
   timer.start();
@@ -182,7 +182,7 @@ void  MyGLWidget::initializeGL()
   setFrequency1(20);
   setFrequency2(10);
   setFrequency3(5);
-  setRoughness(10);
+  setRoughness(20);
 
   for (int index = 0; index < NUM_WAVES; index++)
     {
@@ -408,9 +408,6 @@ void  MyGLWidget::mouseMoveEvent(QMouseEvent *event)
 void  MyGLWidget::keyPressEvent(QKeyEvent *e)
 {
   switch(e->key()) {
-  case Qt::Key_Escape:
-    close();
-    break;
   case Qt::Key_W:
     m_camera->move_forward(delta_t);
     break;
@@ -429,11 +426,12 @@ void  MyGLWidget::keyPressEvent(QKeyEvent *e)
   case Qt::Key_Z:
     m_camera->move_down(delta_t);
     break;
+#ifdef GL_DEBUG
   case Qt::Key_P:
     qDebug() << glm::to_string(m_camera->get_position()).c_str() << glm::to_string(m_camera->get_direction()).c_str();
     break;
-  case Qt::Key_G:
-    wireframe = !wireframe;
-    break;
+#endif
+  default:
+    QWidget::keyPressEvent(e);
   }
 }

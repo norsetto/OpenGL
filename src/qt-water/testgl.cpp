@@ -1,8 +1,8 @@
-#include <QOpenGLWidget>
 #include <QApplication>
+#include <QSurfaceFormat>
 #include <QDesktopWidget>
 
-#include "openglwindow.h"
+#include "window.h"
 
 int main(int argc, char **argv)
 {
@@ -19,17 +19,17 @@ int main(int argc, char **argv)
 #endif
     QSurfaceFormat::setDefaultFormat(format);
 
-    MyGLWidget widget;
-    widget.resize(QSize(800, 600));
+    Window window;
+    window.resize(window.sizeHint());
     int desktopArea = QApplication::desktop()->width() * QApplication::desktop()->height();
-    int widgetArea = widget.width() * widget.height();
+    int windowArea = window.width() * window.height();
 
-    widget.setWindowTitle("OpenGL with Qt");
+    window.setWindowTitle("OpenGL with Qt");
 
-    if (((float)widgetArea / (float)desktopArea) < 0.75f)
-        widget.show();
+    if (((float)windowArea / (float)desktopArea) < 0.75f)
+        window.show();
     else
-        widget.showMaximized();
+        window.showMaximized();
 
     return app.exec();
 }

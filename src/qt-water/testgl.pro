@@ -7,11 +7,16 @@ INCLUDEPATH += $$PWD
 LIBS += -limage
 
 INCLUDEPATH += $$PWD
-SOURCES += $$PWD/openglwindow.cpp $$PWD/camera.cpp 
-HEADERS += $$PWD/openglwindow.h $$PWD/camera.hpp 
+SOURCES += $$PWD/window.cpp \
+           $$PWD/openglwindow.cpp \
+           $$PWD/camera.cpp \
+               
+HEADERS += $$PWD/window.h \
+           $$PWD/openglwindow.h \
+           $$PWD/camera.hpp \
                
 SOURCES += \
-    testgl.cpp setup_ui.cpp
+    testgl.cpp
 
 target.path = $$PWD
 INSTALLS += target

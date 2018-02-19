@@ -37,7 +37,6 @@ class MyGLWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core
     void initializeGL();
     void resizeGL(int w, int h);
     void paintGL();
-    void setup_ui();
     
  protected slots:
 
