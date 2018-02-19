@@ -11,7 +11,7 @@ SOURCES += $$PWD/openglwindow.cpp $$PWD/camera.cpp
 HEADERS += $$PWD/openglwindow.h $$PWD/camera.hpp 
                
 SOURCES += \
-    testgl.cpp
+    testgl.cpp setup_ui.cpp
 
 target.path = $$PWD
 INSTALLS += target
