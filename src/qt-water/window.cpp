@@ -4,6 +4,7 @@
 #include <QtGui>
 #include <QSlider>
 #include <QLabel>
+#include <QDial>
 #include <QPushButton>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -60,9 +61,24 @@ Window::Window(QWidget *parent) : QWidget(parent)
   vbox2->addWidget(slider5);
   vbox2->addWidget(label5);
 
+  QDial *dial1 = new QDial;
+  dial1->setRange(0, 359);
+  dial1->setSingleStep(1);
+  dial1->setPageStep(10);
+  dial1->setValue(45);
+  dial1->setWrapping(true);
+  connect(dial1, SIGNAL(valueChanged(int)), myGLWidget, SLOT(setDirection0(int)));
+
+  QLabel *label43 = new QLabel("Direction");
+
+  QVBoxLayout *vbox19 = new QVBoxLayout;
+  vbox19->addWidget(label43);
+  vbox19->addWidget(dial1);
+
   QHBoxLayout *hbox1 = new QHBoxLayout;
   hbox1->addLayout(vbox1);
   hbox1->addLayout(vbox2);
+  hbox1->addLayout(vbox19);
   
   QGroupBox *wave1 = new QGroupBox(tr("Wave 1"));
   wave1->setLayout(hbox1);
@@ -111,9 +127,24 @@ Window::Window(QWidget *parent) : QWidget(parent)
   vbox4->addWidget(slider6);
   vbox4->addWidget(label6);
 
+  QDial *dial2 = new QDial;
+  dial2->setRange(0, 359);
+  dial2->setSingleStep(1);
+  dial2->setPageStep(10);
+  dial2->setValue(225);
+  dial2->setWrapping(true);
+  connect(dial2, SIGNAL(valueChanged(int)), myGLWidget, SLOT(setDirection1(int)));
+
+  QLabel *label44 = new QLabel("Direction");
+
+  QVBoxLayout *vbox20 = new QVBoxLayout;
+  vbox20->addWidget(label44);
+  vbox20->addWidget(dial2);
+
   QHBoxLayout *hbox2 = new QHBoxLayout;
   hbox2->addLayout(vbox3);
   hbox2->addLayout(vbox4);
+  hbox2->addLayout(vbox20);
   
   QGroupBox *wave2 = new QGroupBox(tr("Wave 2"));
   wave2->setLayout(hbox2);
@@ -162,9 +193,24 @@ Window::Window(QWidget *parent) : QWidget(parent)
   vbox6->addWidget(slider7);
   vbox6->addWidget(label7);
 
+  QDial *dial3 = new QDial;
+  dial3->setRange(0, 359);
+  dial3->setSingleStep(1);
+  dial3->setPageStep(10);
+  dial3->setValue(135);
+  dial3->setWrapping(true);
+  connect(dial3, SIGNAL(valueChanged(int)), myGLWidget, SLOT(setDirection2(int)));
+
+  QLabel *label45 = new QLabel("Direction");
+
+  QVBoxLayout *vbox21 = new QVBoxLayout;
+  vbox21->addWidget(label45);
+  vbox21->addWidget(dial3);
+
   QHBoxLayout *hbox3 = new QHBoxLayout;
   hbox3->addLayout(vbox5);
   hbox3->addLayout(vbox6);
+  hbox3->addLayout(vbox21);
   
   QGroupBox *wave3 = new QGroupBox(tr("Wave 3"));
   wave3->setLayout(hbox3);
@@ -213,9 +259,24 @@ Window::Window(QWidget *parent) : QWidget(parent)
   vbox8->addWidget(slider8);
   vbox8->addWidget(label8);
 
+  QDial *dial4 = new QDial;
+  dial4->setRange(0, 359);
+  dial4->setSingleStep(1);
+  dial4->setPageStep(10);
+  dial4->setValue(315);
+  dial4->setWrapping(true);
+  connect(dial4, SIGNAL(valueChanged(int)), myGLWidget, SLOT(setDirection3(int)));
+
+  QLabel *label46 = new QLabel("Direction");
+
+  QVBoxLayout *vbox22 = new QVBoxLayout;
+  vbox22->addWidget(label46);
+  vbox22->addWidget(dial4);
+
   QHBoxLayout *hbox4 = new QHBoxLayout;
   hbox4->addLayout(vbox7);
   hbox4->addLayout(vbox8);
+  hbox4->addLayout(vbox22);
   
   QGroupBox *wave4 = new QGroupBox(tr("Wave 4"));
   wave4->setLayout(hbox4);

@@ -183,11 +183,10 @@ void  MyGLWidget::initializeGL()
   setFrequency2(10);
   setFrequency3(5);
   setRoughness(20);
-
-  for (int index = 0; index < NUM_WAVES; index++)
-    {
-      m_wave_data.D[index] = glm::vec2(0.7071f, 0.7071f);
-    }
+  setDirection0(45);
+  setDirection1(225);
+  setDirection2(135);
+  setDirection3(315);
 
   m_quad_vao = new QOpenGLVertexArrayObject;
   m_quad_vao->create();
@@ -331,6 +330,30 @@ void MyGLWidget::setRoughness(int value)
     {
       setQ(index, m_wave_data.frequency[index] * m_wave_data.amplitude[index]);
     }
+}
+
+void  MyGLWidget::setDirection0(int value)
+{
+  float wave_angle = float(value) * deg2rad;
+  m_wave_data.D[0] = glm::vec2(std::cos(wave_angle), std::sin(wave_angle));
+}
+
+void  MyGLWidget::setDirection1(int value)
+{
+  float wave_angle = float(value) * deg2rad;
+  m_wave_data.D[1] = glm::vec2(std::cos(wave_angle), std::sin(wave_angle));
+}
+
+void  MyGLWidget::setDirection2(int value)
+{
+  float wave_angle = float(value) * deg2rad;
+  m_wave_data.D[2] = glm::vec2(std::cos(wave_angle), std::sin(wave_angle));
+}
+
+void  MyGLWidget::setDirection3(int value)
+{
+  float wave_angle = float(value) * deg2rad;
+  m_wave_data.D[3] = glm::vec2(std::cos(wave_angle), std::sin(wave_angle));
 }
 
 void MyGLWidget::setNoiseTimeScaleFactor(int value)

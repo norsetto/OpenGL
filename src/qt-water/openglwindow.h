@@ -50,6 +50,10 @@ class MyGLWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core
    void setFrequency2(int value);
    void setFrequency3(int value);
    void setRoughness (int value);
+   void setDirection0(int value);
+   void setDirection1(int value);
+   void setDirection2(int value);
+   void setDirection3(int value);
 
    void setNoiseTimeScaleFactor(int value);
    void setNoiseScaleFactor1(int value);
