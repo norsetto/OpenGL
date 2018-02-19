@@ -1,6 +1,8 @@
 # OpenGL Demos
 A collection of simple OpenGL demos which I developed over the years.
 
+[[https://github.com/norsetto/OpenGL/blob/master/qt-water.png]]
+
 ## Demos
 * image       : a simple png front end used by many other demos
 * butterfly   : dabbling with geometry shaders
