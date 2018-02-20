@@ -2,6 +2,7 @@
 
 #include <QtGui/QOpenGLShaderProgram>
 #include <QOpenGLVertexArrayObject>
+#include <QOpenGLTexture>
 #include <QTime>
 #include <QTimer>
 #include <QMouseEvent>
@@ -17,7 +18,6 @@
 #undef GLM_ENABLE_EXPERIMENTAL
 #include <QVector3D>
 
-#include "image.hpp"
 #include "camera.hpp"
 
 MyGLWidget::MyGLWidget(QWidget *parent) : QOpenGLWidget(parent)
@@ -152,27 +152,10 @@ void  MyGLWidget::initializeGL()
   m_program->setPatchVertexCount(4);
   m_program->release();
 
-  glActiveTexture(GL_TEXTURE0);
-  glGenTextures(1, &m_texture_id);
-  glBindTexture(GL_TEXTURE_2D, m_texture_id);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-  Image water_texture("water.png");
-
-  glTexImage2D(GL_TEXTURE_2D, 0,
-	       water_texture.internalformat(),
-	       water_texture.width(),
-	       water_texture.height(),
-	       0,
-	       water_texture.format(),
-	       GL_UNSIGNED_BYTE,
-	       water_texture.data());
-  glGenerateMipmap(GL_TEXTURE_2D);
+  m_water_texture = new QOpenGLTexture(QImage("water.png"));
+  m_water_texture->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+  m_water_texture->setMagnificationFilter(QOpenGLTexture::Linear);
+  m_water_texture->generateMipMaps();
 
   setAmplitude0(40);
   setAmplitude1(20);
@@ -239,8 +222,7 @@ void  MyGLWidget::paintGL()
 
   m_program->bind();
   m_quad_vao->bind();
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, m_texture_id);
+  m_water_texture->bind();
   
   if (wireframe)
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

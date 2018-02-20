@@ -4,8 +4,6 @@
 QT += core opengl gui widgets
 INCLUDEPATH += $$PWD
 
-LIBS += -limage
-
 INCLUDEPATH += $$PWD
 SOURCES += $$PWD/window.cpp \
            $$PWD/openglwindow.cpp \

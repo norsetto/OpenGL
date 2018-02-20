@@ -8,6 +8,7 @@
 #endif
 #include <QtGui/QOpenGLShaderProgram>
 #include <QOpenGLVertexArrayObject>
+#include <QOpenGLTexture>
 #include <QTime>
 #include <QTimer>
 
@@ -123,5 +124,5 @@ class MyGLWidget : public QOpenGLWidget, protected QOpenGLFunctions_4_3_Core
       bool wireframe = true;
       bool noise = true;
       bool animate = true;
-      GLuint m_texture_id;
+      QOpenGLTexture *m_water_texture;
 };
