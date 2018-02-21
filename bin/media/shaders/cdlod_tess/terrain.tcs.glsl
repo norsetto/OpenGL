@@ -28,7 +28,7 @@ uniform int grid = 3;
 uniform float max_distance = 15.0;
 uniform vec2 viewport = vec2(1920.0, 1080.0);
 
-#if 1
+#if 0
   //Camera Distance Approach
   float GetTessLevel(float Distance0, float Distance1) {
   float AvgDistance = (Distance0 + Distance1) * 0.5;
@@ -47,33 +47,38 @@ uniform vec2 viewport = vec2(1920.0, 1080.0);
   //Screen Space Distance Approach
   float GetTessLevel(vec4 p0, vec4 p1) {
 
-  //Project to screen space
-  vec4 view0 = view_matrix * p0;
-  vec4 view1 = view0;
-  view1.x += distance(p0, p1);
+    // Calculate edge mid point
+    vec4 midPoint = 0.5 * (p0 + p1);
+    
+    // Sphere radius as distance between the control points
+    float radius = 0.5 * distance(p0, p1);
+    
+    //Project to screen space
+    vec4 view0 = view_matrix * midPoint;
 	
-  //Then clip space and screen space
-  vec4 clip0 = proj_matrix * view0;
-  vec4 clip1 = proj_matrix * view1;
+    //Then clip space
+    vec4 clip0 = proj_matrix * (view0 - vec4(radius, vec3(0.0)));
+    vec4 clip1 = proj_matrix * (view0 + vec4(radius, vec3(0.0)));
 
-  clip0 /= clip0.w;
-  clip1 /= clip1.w;
+    clip0 /= clip0.w;
+    clip1 /= clip1.w;
 
-  vec2 screen0 = ((clip0.xy + 1.0) * 0.5) * viewport;
-  vec2 screen1 = ((clip1.xy + 1.0) * 0.5) * viewport;
+    //And screen space
+    vec2 screen0 = ((clip0.xy + 1.0) * 0.5) * viewport;
+    vec2 screen1 = ((clip1.xy + 1.0) * 0.5) * viewport;
 
-  //Length of edge in screen space
-  float d = distance(screen0, screen1);
+    //Length of edge in screen space
+    float d = distance(screen0, screen1);
   
-  //Compute tesselation factor vs. the desidered target (2^grid)
-  return d / exp2(float(grid));
+    //Compute tesselation factor vs. the desidered target (2^grid)
+    return d / exp2(float(grid));
 }
 #endif
 
 void main(void) {
   if (gl_InvocationID == 0) {
 
-#if 1
+#if 0
     //Compute displaced control points
     vec4 texel;
     vec4 p;
