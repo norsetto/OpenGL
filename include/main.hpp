@@ -52,18 +52,24 @@ class Application {
     glfwWindowHint(GLFW_RED_BITS, mode->redBits);
     glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
     glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-#ifndef GL_DEBUG
-    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-#endif
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, info.majorVersion);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, info.minorVersion);
 #ifdef GL_DEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    glfwWindowHint(GLFW_REFRESH_RATE, GLFW_DONT_CARE);
+#else
+    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 #endif
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, info.samples);
-	    
-    window = glfwCreateWindow(mode->width, mode->height, "", monitor, NULL);
+
+    if (info.windowWidth > 0 &&
+	info.windowHeight > 0 &&
+	4 * info.windowWidth * mode->height <= 3 * info.windowHeight * mode->width)
+      window = glfwCreateWindow(info.windowWidth, info.windowHeight, "OpenGL Demo", NULL, NULL);
+    else
+      window = glfwCreateWindow(mode->width, mode->height, "", monitor, NULL);
+    
     if (!window) {
       fprintf(stderr, "Failed to open window\n");
       glfwTerminate();
@@ -71,12 +77,19 @@ class Application {
     }
 
     info.window = window;
-    info.windowHeight = mode->height;
-    info.windowWidth = mode->width;
+    
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+    info.windowHeight = w;
+    info.windowWidth = h;
     info.aspect = (GLfloat)info.windowWidth / (GLfloat)info.windowHeight;
 
     glfwMakeContextCurrent(window);
+#ifdef GL_DEBUG
+    glfwSwapInterval(0);
+#endif
     glfwSetKeyCallback(window, key_callback);
+    glfwSetWindowSizeCallback(window, windowSize_callback);
     glfwSetMouseButtonCallback(window, mouseButton_callback);
     glfwSetCursorPosCallback(window, mouseMove_callback);
     glfwSetScrollCallback(window, mouseWheel_callback);
@@ -159,6 +172,8 @@ class Application {
     info.minorVersion = 3;
     info.samples = 0;
     info.show_cursor = false;
+    info.windowHeight = 0;
+    info.windowWidth = 0;
   }
 		   
   virtual void startup() {
@@ -170,6 +185,9 @@ class Application {
   virtual void shutdown() {
   }
 
+  virtual void resize(int width, int height) {
+  }
+  
   virtual void onKey(int key, int action, int mod) {
   }
 
@@ -275,6 +293,11 @@ class Application {
   GLFWmonitor* monitor; 
   const GLFWvidmode* mode;
   GLFWwindow* window;
+
+static void windowSize_callback(GLFWwindow* window, int width, int height)
+{
+  app->resize(width, height);
+}
 
   static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     app->onKey(key, action, mods);

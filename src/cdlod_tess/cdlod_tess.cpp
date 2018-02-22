@@ -134,6 +134,12 @@ protected:
     }
   }
 
+  void resize(int width, int height)
+  {
+    camera->set_proj_matrix(width / float(height), 0.001f, max_distance * 2.0f);
+    glViewport(0, 0, width, height);
+  }
+
   void onMouseWheel(double pos) {
     camera->change_fov (0.02f * (float)pos);
   }

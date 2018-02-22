@@ -70,6 +70,12 @@ protected:
     }
   }
 
+  void resize(int width, int height)
+  {
+    camera->set_proj_matrix(width / float(height), 0.001f, 10.f);
+    glViewport(0, 0, width, height);
+  }
+  
   void onMouseButton(int button, int action) {
     if (button == GLFW_MOUSE_BUTTON_RIGHT) {
 		mouse.pressed = !mouse.pressed;

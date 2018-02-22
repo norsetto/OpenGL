@@ -73,6 +73,12 @@ protected:
     }
   }
 
+  void resize(int width, int height)
+  {
+    camera->set_proj_matrix(width / float(height), 0.001f, 1000.0f);
+    glViewport(0, 0, width, height);
+  }
+
   void onMouseWheel(double pos) {
     camera->change_fov (0.02f * (float)pos);
   }
@@ -88,6 +94,9 @@ protected:
   virtual void init() {
     Application::init();
     info.samples = 8;
+    info.windowWidth = 800;
+    info.windowHeight = 600;
+    info.show_cursor = true;
   }
   
   virtual void startup() {
