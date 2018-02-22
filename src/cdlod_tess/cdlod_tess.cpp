@@ -136,8 +136,13 @@ protected:
 
   void resize(int width, int height)
   {
-    camera->set_proj_matrix(width / float(height), 0.001f, max_distance * 2.0f);
-    glViewport(0, 0, width, height);
+    if (height > 0) {
+      info.windowWidth = width;
+      info.windowHeight = height;
+      info.aspect = width / float(height);
+    }
+    camera->set_proj_matrix(info.aspect, 0.001f, max_distance * 2.0f);
+    glViewport(0, 0, info.windowWidth, info.windowHeight);
   }
 
   void onMouseWheel(double pos) {

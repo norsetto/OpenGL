@@ -44,8 +44,10 @@ find_package (PNG REQUIRED)
 include_directories(${PNG_INCLUDE_DIRS})
 target_link_libraries (image ${PNG_LIBRARIES})
 
+set(COMMON_SOURCES glad/glad.c imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_impl_glfw_gl3.cpp)
+
 foreach(DEMO ${DEMOS})
-  add_executable(${DEMO} src/${DEMO}/${DEMO}.cpp glad/glad.c)
+  add_executable(${DEMO} src/${DEMO}/${DEMO}.cpp ${COMMON_SOURCES})
   target_link_libraries(${DEMO} ${COMMON_LIBS})
 endforeach(DEMO)
 

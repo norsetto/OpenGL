@@ -75,8 +75,13 @@ protected:
 
   void resize(int width, int height)
   {
-    camera->set_proj_matrix(width / float(height), 0.001f, 1000.0f);
-    glViewport(0, 0, width, height);
+    if (height > 0) {
+      info.windowWidth = width;
+      info.windowHeight = height;
+      info.aspect = width / float(height);
+    }
+    camera->set_proj_matrix(info.aspect, 0.001f, 1000.0f);
+    glViewport(0, 0, info.windowWidth, info.windowHeight);
   }
 
   void onMouseWheel(double pos) {
@@ -385,17 +390,15 @@ virtual void render(double currentTime) {
   glBindVertexArray(0);
 
   if (calcFps) {
-    frame++;
-    double deltaFPSTime = currentTime-lastFPSTime;
-    if (deltaFPSTime > 0.25) {
-      double fps = ((double)frame)/deltaFPSTime;
-      printf("\r%7.2f FPS", fps);
-      fflush(stdout);
-      lastFPSTime = currentTime;
-      frame = 0;
-    }
-   }
-
+    ImGui_ImplGlfwGL3_NewFrame();
+    ImGui::SetNextWindowPos(ImVec2(0,0));
+    ImGui::Begin("Average");
+    ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::End();
+    ImGui::Render();
+    ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+  }
+  
   deltaTime = currentTime-lastTime;
   lastTime = currentTime;
 }

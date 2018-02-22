@@ -72,10 +72,15 @@ protected:
 
   void resize(int width, int height)
   {
-    camera->set_proj_matrix(width / float(height), 0.001f, 10.f);
-    glViewport(0, 0, width, height);
+    if (height > 0) {
+      info.windowWidth = width;
+      info.windowHeight = height;
+      info.aspect = width / float(height);
+    }
+    camera->set_proj_matrix(info.aspect, 0.001f, 10.0f);
+    glViewport(0, 0, info.windowWidth, info.windowHeight);
   }
-  
+
   void onMouseButton(int button, int action) {
     if (button == GLFW_MOUSE_BUTTON_RIGHT) {
 		mouse.pressed = !mouse.pressed;

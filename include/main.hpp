@@ -10,6 +10,9 @@
 #include <glad.h>
 #include <GLFW/glfw3.h>
 
+#include "imgui.h"
+#include "imgui_impl_glfw_gl3.h"
+
 #include <stdio.h>
 #ifdef GL_DEBUG
 #include <iostream>
@@ -97,7 +100,12 @@ class Application {
       glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
-    
+
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui_ImplGlfwGL3_Init(window, false);
+    ImGui::StyleColorsDark();
+
 #ifdef GL_DEBUG
     fprintf(stderr, "OpenGL vendor string: %s\n", (char *)glGetString(GL_VENDOR));
     fprintf(stderr, "OpenGL renderer string: %s\n", (char *)glGetString(GL_RENDERER));
@@ -156,14 +164,19 @@ class Application {
     startup();
 
     while (!glfwWindowShouldClose(window)) {
+      glfwPollEvents();
+      int display_w, display_h;
+      glfwGetFramebufferSize(window, &display_w, &display_h);
+      glViewport(0, 0, display_w, display_h);
       render(glfwGetTime());
       glfwSwapBuffers(window);
-      glfwPollEvents();
     }
 
     shutdown();
 
     glfwDestroyWindow(window);
+    ImGui_ImplGlfwGL3_Shutdown();
+    ImGui::DestroyContext();
     glfwTerminate();
   }
 
