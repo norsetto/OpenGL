@@ -19,7 +19,7 @@ A collection of simple OpenGL demos which I developed over the years.
 * [glm](https://glm.g-truc.net/0.9.8/index.html) - OpenGL Mathematics
 * [Assimp](http://assimp.sourceforge.net/) - Open Asset Import Library
 * [webgl-noise](https://github.com/stegu/webgl-noise) - Simplex noise function
-* [Dear ImGui] (https://github.com/ocornut/imgui) - Bloat-free Immediate Mode Graphical User interface
+* [Dear ImGui](https://github.com/ocornut/imgui) - Bloat-free Immediate Mode Graphical User interface
 
 ## Acknowledgments
 [The OpenGL SuperBible](http://www.openglsuperbible.com/) - Graham Sellers, Richard S. Wright Jr., Nicholas Haemel
