@@ -20,11 +20,15 @@ float rnd(float range)
   return rndDist(rndEngine);
 }
 
+float fire_size = 0.035f;
+float prob_to_smoke = 2.0f;
+float smoke_size_factor = 0.01f;
+
 Particle::PARTICLE generate(void)
 {
   float azimuth = rnd(TAU);
   float elevation = rnd(float(M_PI)) - float(M_PI) / 2.0f;
-  float r = rnd(0.01f);
+  float r = rnd(fire_size);
   return Particle::PARTICLE(glm::vec3(r * cos(azimuth) * cos(elevation),
 				      r * sin(elevation),
 				      r * sin(azimuth) * cos(elevation)),
@@ -45,7 +49,7 @@ public:
     for (auto &particle : m_particles)
       {
 	if (particle.type == 0)
-	  if (rnd(100.0f) < 2.0f)
+	  if (rnd(100.0f) < prob_to_smoke)
 	    {
 	      particle.velocity = glm::vec3((rnd(0.02f) - 0.01f),
 					    rnd(0.1f),
@@ -72,7 +76,7 @@ public:
 class test_app : public Application {
 
 public:
-  test_app() :	calcFps(false)
+  test_app() :	showUi(false)
   {}
   
 protected:
@@ -101,8 +105,8 @@ protected:
       case 'Z': 
 	camera->move_down((float)deltaTime);
 	break;
-      case 'F':
-	calcFps = !calcFps;
+      case 'U':
+	showUi = !showUi;
 	break;
       }
     }
@@ -169,6 +173,7 @@ protected:
     Image fire_texture (texture_fire, DATA_LOCATION "fire.png");
     fire.setTexture1(texture_fire);
     fire.setTexture2(texture_smoke);
+    fire.setSizeRate(smoke_size_factor);
   }
 
 virtual void render(double currentTime) {
@@ -191,15 +196,20 @@ virtual void render(double currentTime) {
   block->view_matrix  = camera->get_view_matrix();
   block->proj_matrix  = camera->get_proj_matrix();
   block->vp_matrix    = camera->get_vp_matrix();
-  
+
   fire.update(float(deltaTime));
   fire.render();
 
-  if (calcFps) {
+  if (showUi) {
     ImGui_ImplGlfwGL3_NewFrame();
     ImGui::SetNextWindowPos(ImVec2(0,0));
+    ImGui::SetNextWindowSize(ImVec2(0,0));
     ImGui::Begin("Average");
     ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::SliderFloat("Smoke probability", &prob_to_smoke, 0.0f, 10.0f);
+    ImGui::SliderFloat("Fire size", &fire_size, 0.0f, 0.05f);
+    ImGui::SliderFloat("Smoke size", &smoke_size_factor, 0.0f, 0.02f);
+    fire.setSizeRate(smoke_size_factor);
     ImGui::End();
     ImGui::Render();
     ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
@@ -214,7 +224,7 @@ virtual void shutdown() {
 }
 
 private:
-  bool calcFps;
+  bool showUi;
 
   Fire fire;
   GLuint fireProgram;
