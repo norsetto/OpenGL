@@ -10,6 +10,7 @@ A collection of simple OpenGL demos which I developed over the years.
 * qt-culling  : distance culling with quadtrees
 * water       : displacement with geometric waves + high frequency noise
 * qt-water    : the water demo within a Qt framework
+* fire        : playing with particles (thanks to Sascha Willems)
 
 ## Built With
 
@@ -23,4 +24,5 @@ A collection of simple OpenGL demos which I developed over the years.
 
 ## Acknowledgments
 [The OpenGL SuperBible](http://www.openglsuperbible.com/) - Graham Sellers, Richard S. Wright Jr., Nicholas Haemel
+
 [Sascha Willems](https://github.com/SaschaWillems/Vulkan) - A source of fantastic Vulkan examples and demos
