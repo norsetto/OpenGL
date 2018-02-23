@@ -19,6 +19,7 @@ set(DEMOS
   cdlod_tess
   qt-culling
   water
+  fire
   )
 
 # Libraries
