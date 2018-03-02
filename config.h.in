@@ -5,8 +5,6 @@
 #define DATA_LOCATION "@RUN_DIR@/media/textures/"
 #define INPUT_LOCATION "@RUN_DIR@/media/inputs/"
 #define MODELS_LOCATION "@RUN_DIR@/media/models/"
-#define PIo2 1.5707963268f
-#define TAU 6.28318530718f
 #define MAX_STRING_LENGTH 255
 #define _unused(x) ((void)(x))
 #define gl_min(x,y) (x<y?x:y)

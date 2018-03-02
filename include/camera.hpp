@@ -1,13 +1,23 @@
 #pragma once
 
-#include "config.h"
-
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
+
+#define _USE_MATH_DEFINES
+#include <math.h>
+
+struct Frustum {
+	glm::vec4 near_plane;
+	glm::vec4 far_plane;
+	glm::vec4 left_plane;
+	glm::vec4 right_plane;
+	glm::vec4 bottom_plane;
+	glm::vec4 top_plane;
+};
 
 struct AABB {
 
@@ -37,6 +47,7 @@ public:
   void change_fov(float delta_fov);
   void change_speed(float delta_speed);
   void rotate(float delta_x, float delta_y);
+  void lookAt(glm::vec3 position);
   void update(void);
   void set_proj_matrix(float aspect, float minz, float maxz);
   glm::mat4 get_proj_matrix(void);
@@ -44,6 +55,7 @@ public:
   glm::mat4 get_vp_matrix(void);
   glm::vec3 get_position(void);
   glm::vec2 get_direction(void);
+  Frustum   get_frustum(void);
   bool AABBInsideFrustum(const AABB &boundary);
   bool AABBInsidePlane(const glm::vec4 &plane, const glm::vec3 &max_v, const glm::vec3 &min_v);
   
@@ -63,13 +75,7 @@ private:
   glm::mat4 view_matrix;
   glm::mat4 proj_matrix;
   glm::mat4 vp_matrix;
-  glm::vec4 near_plane;
-  glm::vec4 far_plane;
-  glm::vec4 left_plane;
-  glm::vec4 right_plane;
-  glm::vec4 bottom_plane;
-  glm::vec4 top_plane;
-
+  Frustum frustum;
 };
 
 void Camera::set_position(glm::vec3 position) {
@@ -83,6 +89,7 @@ void Camera::set_direction(glm::vec2 direction) {
 
 void Camera::set_fov(float fov) {
   this->fov = fov;
+  proj_matrix = glm::perspective(fov, aspect, minz, maxz);
 }
 
 void Camera::set_speed(float speed) {
@@ -121,6 +128,7 @@ void Camera::change_fov(float delta_fov) {
   fov += delta_fov;
   if (fov > 1.2f) fov = 1.2f;
   else if (fov < 0.01f) fov = 0.01f;
+  proj_matrix = glm::perspective(fov, aspect, minz, maxz);
 }
 
 void Camera::change_speed(float delta_speed) {
@@ -130,16 +138,20 @@ void Camera::change_speed(float delta_speed) {
 void Camera::rotate(float delta_x, float delta_y) {
   yaw   += delta_x * rate;
   pitch += delta_y * rate;
-  yaw -= TAU * truncf(yaw / TAU);
-  if (pitch >  PIo2 - 0.5f * fov) {
-    pitch =  PIo2 - 0.5f * fov;
-  } else if (pitch < -PIo2 + 0.5f * fov) pitch = -PIo2 + 0.5f * fov;
+  yaw -= 2.0f * M_PI * truncf(0.5f * yaw / M_PI);
+  if (pitch >  M_PI_2 - 0.5f * fov) {
+    pitch =  M_PI_2 - 0.5f * fov;
+  } else if (pitch < -M_PI_2 + 0.5f * fov) pitch = -M_PI_2 + 0.5f * fov;
+}
+
+void Camera::lookAt(glm::vec3 position) {
+	glm::vec3 direction = glm::normalize(position - this->position);
+	pitch = asin(direction.y);
+	yaw = atan2(direction.x, -direction.z);
 }
 
 void Camera::update(void) {
   
-  proj_matrix = glm::perspective(fov, aspect, minz, maxz);
-
   front = glm::vec3(sinf(yaw) * cosf(pitch),
 		    sinf(pitch),
 		    -cosf(yaw) * cosf(pitch));
@@ -153,18 +165,18 @@ void Camera::update(void) {
 			    up);
   vp_matrix = proj_matrix * view_matrix;
 
-  near_plane = glm::row(vp_matrix, 3) + glm::row(vp_matrix, 2);
-  near_plane /= glm::length(glm::vec3(near_plane));
-  far_plane = glm::row(vp_matrix, 3) - glm::row(vp_matrix, 2);
-  far_plane /= glm::length(glm::vec3(far_plane));
-  left_plane = glm::row(vp_matrix, 3) + glm::row(vp_matrix, 0);
-  left_plane /= glm::length(glm::vec3(left_plane));
-  right_plane = glm::row(vp_matrix, 3) - glm::row(vp_matrix, 0);
-  right_plane /= glm::length(glm::vec3(right_plane));
-  bottom_plane = glm::row(vp_matrix, 3) + glm::row(vp_matrix, 1);
-  bottom_plane /= glm::length(glm::vec3(bottom_plane));
-  top_plane = glm::row(vp_matrix, 3) - glm::row(vp_matrix, 1);
-  top_plane /= glm::length(glm::vec3(top_plane));
+  frustum.near_plane = glm::row(vp_matrix, 3) + glm::row(vp_matrix, 2);
+  frustum.near_plane /= glm::length(glm::vec3(frustum.near_plane));
+  frustum.far_plane = glm::row(vp_matrix, 3) - glm::row(vp_matrix, 2);
+  frustum.far_plane /= glm::length(glm::vec3(frustum.far_plane));
+  frustum.left_plane = glm::row(vp_matrix, 3) + glm::row(vp_matrix, 0);
+  frustum.left_plane /= glm::length(glm::vec3(frustum.left_plane));
+  frustum.right_plane = glm::row(vp_matrix, 3) - glm::row(vp_matrix, 0);
+  frustum.right_plane /= glm::length(glm::vec3(frustum.right_plane));
+  frustum.bottom_plane = glm::row(vp_matrix, 3) + glm::row(vp_matrix, 1);
+  frustum.bottom_plane /= glm::length(glm::vec3(frustum.bottom_plane));
+  frustum.top_plane = glm::row(vp_matrix, 3) - glm::row(vp_matrix, 1);
+  frustum.top_plane /= glm::length(glm::vec3(frustum.top_plane));
 }
 
 void Camera::set_proj_matrix(float aspect, float minz, float maxz) {
@@ -179,6 +191,7 @@ glm::mat4 Camera::get_view_matrix(void) { return view_matrix; }
 glm::mat4 Camera::get_vp_matrix(void) { return vp_matrix; }
 glm::vec3 Camera::get_position(void) { return position; }
 glm::vec2 Camera::get_direction(void) { return glm::vec2(pitch, yaw); }
+Frustum   Camera::get_frustum(void) { return frustum; }
 
 bool Camera::AABBInsidePlane(const glm::vec4 &plane, const glm::vec3 &max_v, const glm::vec3 &min_v) {
 
@@ -203,24 +216,23 @@ bool Camera::AABBInsideFrustum(const AABB & boundary) {
   glm::vec3 min_v = boundary.centre - boundary.halfSize;
   glm::vec3 max_v = boundary.centre + boundary.halfSize;
 
-  if (!AABBInsidePlane(near_plane, max_v, min_v))
+  if (!AABBInsidePlane(frustum.near_plane, max_v, min_v))
     return false;
 
-  if (!AABBInsidePlane(far_plane, max_v, min_v))
+  if (!AABBInsidePlane(frustum.far_plane, max_v, min_v))
     return false;
 
-  if (!AABBInsidePlane(left_plane, max_v, min_v))
+  if (!AABBInsidePlane(frustum.left_plane, max_v, min_v))
     return false;
 
-  if (!AABBInsidePlane(right_plane, max_v, min_v))
+  if (!AABBInsidePlane(frustum.right_plane, max_v, min_v))
     return false;
 
-  if (!AABBInsidePlane(bottom_plane, max_v, min_v))
+  if (!AABBInsidePlane(frustum.bottom_plane, max_v, min_v))
     return false;
 
-  if (!AABBInsidePlane(top_plane, max_v, min_v))
+  if (!AABBInsidePlane(frustum.top_plane, max_v, min_v))
     return false;
 
   return true;
 }
-

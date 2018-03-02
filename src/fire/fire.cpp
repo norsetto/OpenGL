@@ -3,6 +3,7 @@
 #include <random>
 #include <vector>
 
+#include "config.h"
 #include "main.hpp"
 #include "particles.hpp"
 #include "shader.hpp"
@@ -26,13 +27,13 @@ float smoke_size_factor = 0.01f;
 
 Particle::PARTICLE generate(void)
 {
-  float azimuth = rnd(TAU);
+  float azimuth = rnd(2.0f * M_PI);
   float elevation = rnd(float(M_PI)) - float(M_PI) / 2.0f;
   float r = rnd(fire_size);
   return Particle::PARTICLE(glm::vec3(r * cos(azimuth) * cos(elevation),
 				      r * sin(elevation),
 				      r * sin(azimuth) * cos(elevation)),
-			    rnd(TAU),
+			    rnd(2.0f * M_PI),
 			    glm::vec4(1.0f, 1.0f, 1.0f, 0.6f + rnd(0.4f)),
 			    glm::vec3(0.0f, rnd(0.01f), 0.0f),
 			    rnd(0.04f) - 0.02f,

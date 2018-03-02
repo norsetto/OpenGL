@@ -8,6 +8,7 @@
 #include <vector>
 #include <time.h>
 
+#include "config.h"
 #include "main.hpp"
 #include "shader.hpp"
 #include "camera.hpp"
