@@ -20,6 +20,7 @@ set(DEMOS
   qt-culling
   water
   fire
+  model
   )
 
 # Libraries

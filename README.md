@@ -11,6 +11,7 @@ A collection of simple OpenGL demos which I developed over the years.
 * water       : displacement with geometric waves + high frequency noise
 * qt-water    : the water demo within a Qt framework
 * fire        : playing with particles (thanks to Sascha Willems)
+* model       : model loading and rendering (models with diffuse, normal and specular maps)
 
 ## Built With
 
