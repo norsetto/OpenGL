@@ -83,8 +83,8 @@ class Application {
     
     int w, h;
     glfwGetWindowSize(window, &w, &h);
-    info.windowHeight = w;
-    info.windowWidth = h;
+    info.windowHeight = h;
+    info.windowWidth = w;
     info.aspect = (GLfloat)info.windowWidth / (GLfloat)info.windowHeight;
 
     glfwMakeContextCurrent(window);
