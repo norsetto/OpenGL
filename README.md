@@ -1,7 +1,7 @@
 # OpenGL Demos
 A collection of simple OpenGL demos which I developed over the years.
 
-![Water displacement demo within a Qt framework](qt-water.png)
+![Water displacement (with Qt) and model loading demos](showcase.png)
 
 ## Demos
 * image       : a simple png front end used by many other demos
