@@ -65,16 +65,16 @@ void main()
     if (auxilary[1] == 0.0)
       {
 	diffuse_color = diffuse;
-	color.a = diffuse_color.a;
 	ambient_color = ambient;
       }
     if (auxilary[1] > 0.0)
       {
 	diffuse_color = texture2D(texUnit, fs_in.TexCoord);
-	color.a = diffuse_color.a;
 	ambient_color = 0.33 * ambient;
       }
+    color.a = diffuse_color.a;
     diffuse_color *= max(0.0, NdotL);
+    
     if (auxilary[1] > 2.0)
        specular_color = texture2D(spcUnit, fs_in.TexCoord);
     else
