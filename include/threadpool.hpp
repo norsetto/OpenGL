@@ -18,15 +18,16 @@ class ThreadPool
   };
 
  public:
-  
+
   ThreadPool();
   ThreadPool(unsigned int pool_size);
   ~ThreadPool();
 
   bool initialize();
   template<typename F, typename... Args>
-    bool add(F func, Args... args);
+  bool add(F func, Args... args);
   bool free();
+  size_t count() { return job_queue.size(); };
 
  private:
   void worker();
@@ -69,11 +70,10 @@ bool ThreadPool::initialize()
 {
   pool_state = STARTED;
   worker_thread = new std::thread [pool_size];
-  
-  for (unsigned int i = 0; i < pool_size; i++)
-    {
-      worker_thread[i] = std::thread(&ThreadPool::worker, this);
-    }
+
+  for (unsigned int i = 0; i < pool_size; i++) {
+    worker_thread[i] = std::thread(&ThreadPool::worker, this);
+  }
 
   return true;
 }
@@ -81,48 +81,43 @@ bool ThreadPool::initialize()
 bool ThreadPool::free()
 {
   std::unique_lock<std::mutex> lock(task_lock);
-  
+
   pool_state = STOPPED;
   new_job_added_or_stopped.notify_all();
   lock.unlock();
-  
-  for (unsigned int i = 0; i < pool_size; i++)
-    {
-      if(worker_thread[i].joinable())
-	{
-	  worker_thread[i].join();
-	}
-    }
+
+  for (unsigned int i = 0; i < pool_size; i++) {
+      if(worker_thread[i].joinable()) {
+        worker_thread[i].join();
+      }
+  }
 
   delete [] worker_thread;
-  
+
   job_queue.clear();
-  
+
   return true;
 }
 
 void ThreadPool::worker()
 {
   job task;
-  
+
   while(true) {
 
     std::unique_lock<std::mutex> lock(task_lock);
-    
+
     new_job_added_or_stopped.wait(lock,
-				  [this](){return
-				      (pool_state == STOPPED) ||
-				      (!job_queue.empty());});
-    if (pool_state == STOPPED)
-      {
-	return void();
-      }
+                                  [this](){return (pool_state == STOPPED) ||
+                                                  (!job_queue.empty());});
+    if (pool_state == STOPPED) {
+        return void();
+    }
 
     task = job_queue.front();
     job_queue.pop_front();
 
     task.call();
   }
-  
 }
 
