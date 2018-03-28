@@ -12,6 +12,7 @@ A collection of simple OpenGL demos which I developed over the years.
 * qt-water    : the water demo within a Qt framework
 * fire        : playing with particles (thanks to Sascha Willems)
 * model       : model loading and rendering (models with diffuse, normal and specular maps)
+* radeonrays  : raytracing with the RadeonRays SDK
 
 ## Built With
 
