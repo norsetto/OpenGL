@@ -5,12 +5,12 @@
 2. The perspective camera looks pretty funky.
 
 ## Things I'd like to add:
-*Cmake
-*It would be nice to use an openCL buffer for the camera (as in the original). But how to update it!?
-*A somewhat more complex scene, perhaps Sponza? Perhaps more lights?
-*Obviously reflections and refractions.
-*Antialiasing.
-*Heck, it would also be nice to use montecarlo generation and denoising!
+* Cmake
+* It would be nice to use an openCL buffer for the camera (as in the original). But how to update it!?
+* A somewhat more complex scene, perhaps Sponza? Perhaps more lights?
+* Obviously reflections and refractions.
+* Antialiasing.
+* Heck, it would also be nice to use montecarlo generation and denoising!
 
 ## Built With
 * [RadeonRays](https://github.com/GPUOpen-LibrariesAndSDKs/RadeonRays_SDK) - The amazing folks at AMD/Radeon doing their best
