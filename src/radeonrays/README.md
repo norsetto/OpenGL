@@ -1,10 +1,10 @@
-##First jab at the RadeonRays SDK: mainly the CornellBoxShadow tutorial but dynamic (moving camera and light).
+## First jab at the RadeonRays SDK: mainly the CornellBoxShadow tutorial but dynamic (moving camera and light).
 
-##Main issues:
+## Main issues:
 1. Resizing doesn't work, I still have to figure out how to handle the **openCL buffers**(via CLW).
 2. The perspective camera looks pretty funky.
 
-##Things I'd like to add:
+## Things I'd like to add:
 *Cmake
 *It would be nice to use an openCL buffer for the camera (as in the original). But how to update it!?
 *A somewhat more complex scene, perhaps Sponza? Perhaps more lights?
