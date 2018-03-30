@@ -1,16 +1,16 @@
 /**********************************************************************
  Copyright (c) 2016 Advanced Micro Devices, Inc. All rights reserved.
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included in
  all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
@@ -45,14 +45,14 @@ typedef struct _Intersection
     // Padding elements
     int padding0;
     int padding1;
-        
+
     // uv - hit barycentrics, w - ray distance
     float4 uvwt;
 } Intersection;
 
-float4 ConvertFromBarycentric(__global const float* vec, 
-                            __global const int* ind, 
-                            int prim_id, 
+float4 ConvertFromBarycentric(__global const float* vec,
+                            __global const int* ind,
+                            int prim_id,
                             const float4 uvwt)
 {
     float4 a = (float4)(vec[ind[prim_id * 3] * 3],
@@ -66,15 +66,15 @@ float4 ConvertFromBarycentric(__global const float* vec,
     float4 c = (float4)(vec[ind[prim_id * 3 + 2] * 3],
                         vec[ind[prim_id * 3 + 2] * 3 + 1],
                         vec[ind[prim_id * 3 + 2] * 3 + 2], 0.f);
-						
+
     return a * (1 - uvwt.x - uvwt.y) + b * uvwt.x + c * uvwt.y;
 }
 
 __kernel void GeneratePerspectiveRays(__global Ray* rays,
                                     const float4 cam_pos,
-									const float4 cam_forward,
-									const float4 cam_right,
-									const float4 cam_up,
+                                    const float4 cam_forward,
+                                    const float4 cam_right,
+                                    const float4 cam_up,
                                     const float4 cam_zcap,
                                     int width,
                                     int height)
@@ -86,16 +86,16 @@ __kernel void GeneratePerspectiveRays(__global Ray* rays,
     // Check borders
     if (globalid.x < width && globalid.y < height)
     {
-        const float xstep = 2.f / (float)width;
-        const float ystep = 2.f / (float)height;
-		float x = 1.f - xstep * (float)globalid.x;
-        float y = ystep * (float)globalid.y;
+        //pixel coordinates on camera plane
+        float x = 2.0 * ((float)globalid.x / (float)width  - 0.5);
+        float y = 2.0 * ((float)globalid.y / (float)height - 0.5);
+
         // Perspective view
         int k = globalid.y * width + globalid.x;
-		
-		rays[k].d.xyz = cam_zcap.x * cam_forward.xyz + x * cam_right.xyz + y * cam_up.xyz - cam_pos.xyz;
+
+        rays[k].d.xyz = normalize(cam_zcap.x * cam_forward.xyz + x * cam_right.xyz + y * cam_up.xyz);
         rays[k].d.w = 0.0;
-        rays[k].o.xyz = cam_pos.xyz;
+        rays[k].o.xyz = cam_pos.xyz + cam_zcap.x * rays[k].d.xyz;
         rays[k].o.w = cam_zcap.y - cam_zcap.x;
 
         rays[k].extra.x = 0xFFFFFFFF;
@@ -135,7 +135,7 @@ __kernel void GenerateShadowRays(__global Ray* rays,
         {
            return;
         }
-        
+
         // Calculate position and normal of the intersection point
         int ind = indents[shape_id];
         float4 pos = ConvertFromBarycentric(positions + ind*3, ids + ind, prim_id, isect[k].uvwt);
@@ -179,6 +179,7 @@ __kernel void Shading(//scene
         int k = globalid.y * width + globalid.x;
         int shape_id = isect[k].shapeid;
         int prim_id = isect[k].primid;
+        float4 col = {0.0, 0.0, 0.0, 1.0}; //Background color
 
         if (shape_id != -1 && prim_id != -1)
         {
@@ -199,23 +200,21 @@ __kernel void Shading(//scene
                                         diffuse[color_id + 2], 1.f);
 
             // Calculate lighting
-            float4 col = amb_col;
+            col = amb_col;
 
-			 if (occl[k] == -1)
-			 {
-				float4 light_dir = normalize(light - pos);
-				float dot_prod = dot(norm, light_dir);
-				if (dot_prod > 0)
-					col += dot_prod * diff_col;
-			}
-
-            out[k * 4] = col.x * 255;
-            out[k * 4 + 1] = col.y * 255;
-            out[k * 4 + 2] = col.z * 255;
-            out[k * 4 + 3] = 255;
+            if (occl[k] == -1)
+            {
+                float4 light_dir = normalize(light - pos);
+                float dot_prod = dot(norm, light_dir);
+                if (dot_prod > 0)
+                    col += dot_prod * diff_col;
+            }
         }
+        out[k * 4] = col.x * 255;
+        out[k * 4 + 1] = col.y * 255;
+        out[k * 4 + 2] = col.z * 255;
+        out[k * 4 + 3] = 255;
     }
 }
-
 
 #endif //KERNEL_CL

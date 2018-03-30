@@ -2,7 +2,7 @@
 
 ## Main issues:
 1. Resizing doesn't work, I still have to figure out how to handle the **openCL buffers**(via CLW).
-2. The perspective camera looks pretty funky.
+2. ~~The perspective camera looks pretty funky.~~
 
 ## Things I'd like to add:
 * Cmake
