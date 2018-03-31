@@ -1,5 +1,7 @@
 ## First jab at the RadeonRays SDK: mainly the CornellBoxShadow tutorial but dynamic (moving camera and light).
 
+![Sibenik in all its raytracing glory](sibenik.png)
+
 ## Main issues:
 1. Resizing doesn't work, I still have to figure out how to handle the **openCL buffers**(via CLW).
 2. ~~The perspective camera looks pretty funky.~~
