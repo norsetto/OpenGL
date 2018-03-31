@@ -655,7 +655,14 @@ static bool exportFaceGroupToShape(
     }
   }
 
-  if (normals_calculation && shape.mesh.normals.empty()) {
+  static bool first_time = true;
+
+  if (first_time) {
+	  normals_calculation = normals_calculation && shape.mesh.normals.empty();
+	  first_time = false;
+  }
+
+  if (normals_calculation) {
     const size_t nIndexs = shape.mesh.indices.size();
     if (nIndexs % 3 == 0) {
       shape.mesh.normals.resize(shape.mesh.positions.size());
