@@ -13,7 +13,7 @@ uniform sampler2D g_Texture;
 float u_lumaThreshold = 0.5;
 float u_mulReduce = 1.0 / 8.0;
 float u_minReduce = 1.0 / 128.0;
-vec2 u_texelStep = vec2(1.0 / 640.0, 1.0 / 480.0);
+vec2 u_texelStep = vec2(1.0 / 800.0, 1.0 / 600.0);
 float u_maxSpan = 8.0;
 
 varying vec2 Texcoord;
