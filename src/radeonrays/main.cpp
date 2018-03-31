@@ -127,14 +127,14 @@ namespace {
 void InitData()
 {
     std::string basepath = "data/";
-    std::string filename = basepath + "orig.objm";
+    std::string filename = basepath + "sibenik.obj";
 	std::string err;
     bool res = LoadObj(g_objshapes, g_objmaterials, err, filename.c_str(), basepath.c_str(), triangulation | calculate_normals);
 	if (!err.empty())
 		fprintf(stderr, "%s\n", err.c_str());
 
 	if (!res)
-		throw std::runtime_error("Loading obj file not succesfull");
+		throw std::runtime_error("Loading obj file not successful");
 
 	fprintf(stdout, "# of shapes    : %u\n", static_cast<uint32_t>(g_objshapes.size()));
 	fprintf(stdout, "# of materials : %u\n", static_cast<uint32_t>(g_objmaterials.size()));
@@ -426,7 +426,15 @@ void DrawScene(float time)
                 light.x += (float)(xpos - mouse.xpos) * 0.005f;
                 light.z += (float)(ypos - mouse.ypos) * 0.005f;
                 break;
-        }
+			case(GLFW_MOUSE_BUTTON_RIGHT):
+				fprintf(stdout, "cam.p       = { %ff, %ff, %ff };\n", cam.p.x, cam.p.y, cam.p.z);
+				fprintf(stdout, "cam.forward = { %ff, %ff, %ff };\n", cam.forward.x, cam.forward.y, cam.forward.z);
+				fprintf(stdout, "cam.right   = { %ff, %ff, %ff };\n", cam.right.x, cam.right.y, cam.right.z);
+				fprintf(stdout, "cam.up      = { %ff, %ff, %ff };\n", cam.up.x, cam.up.y, cam.up.z);
+				fprintf(stdout, "cam.pitch = %ff;\n", cam.pitch);
+				fprintf(stdout, "cam.yaw   = %ff;\n", cam.yaw);
+				break;
+		}
         mouse.xpos = xpos;
         mouse.ypos = ypos;
     }
@@ -631,14 +639,14 @@ int main(int argc, char* argv[])
     g_api->Commit();
 
     // Setup camera
-    cam.forward = { 0.f, 0.f, -1.f };
-    cam.up = { 0.f, 1.f, 0.f };
-    cam.right = { 1.f, 0.f, 0.f };
-    cam.p = { 0.f, 1.f, 2.f };
-    cam.zcap = { 1.f, 1000.f };
+	cam.p = { 0.516821f, -12.180884f, 0.081849f };
+	cam.forward = { 0.908958f, 0.416871f, 0.003823f };
+    cam.up = { -0.416867f, 0.908966f, -0.001753f };
+    cam.right = { -0.004205f, 0.000000f, 0.999991f };
+	cam.pitch = 0.43f;
+	cam.yaw = 1.566591f;
+	cam.zcap = { 1.f, 1000.f };
     cam.speed = 10.0f;
-    cam.yaw = 3.14159f;
-    cam.pitch = 0.0f;
 
     // Create OpenCL buffers
     ray_buffer_cl         = CLWBuffer<ray>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
