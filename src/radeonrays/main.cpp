@@ -82,7 +82,7 @@ namespace {
     } cam;
 
     // Point light position
-	RadeonRays::float3 light = { -0.01f, 1.85f, 0.1f };
+	RadeonRays::float3 light = { -5.795126f, 0.277411f, 0.285406f };
 
     //Mouse struct for mouse handling
     struct MOUSE {
@@ -99,8 +99,8 @@ namespace {
     GLFWmonitor* monitor;
     const GLFWvidmode* mode;
     GLFWwindow* window;
-    int g_window_width = 640;
-    int g_window_height = 480;
+    int g_window_width = 800;
+    int g_window_height = 600;
     int k_raypack_size = g_window_height * g_window_width;
 
     //RadeonRays buffers
@@ -427,12 +427,7 @@ void DrawScene(float time)
                 light.z += (float)(ypos - mouse.ypos) * 0.005f;
                 break;
 			case(GLFW_MOUSE_BUTTON_RIGHT):
-				fprintf(stdout, "cam.p       = { %ff, %ff, %ff };\n", cam.p.x, cam.p.y, cam.p.z);
-				fprintf(stdout, "cam.forward = { %ff, %ff, %ff };\n", cam.forward.x, cam.forward.y, cam.forward.z);
-				fprintf(stdout, "cam.right   = { %ff, %ff, %ff };\n", cam.right.x, cam.right.y, cam.right.z);
-				fprintf(stdout, "cam.up      = { %ff, %ff, %ff };\n", cam.up.x, cam.up.y, cam.up.z);
-				fprintf(stdout, "cam.pitch = %ff;\n", cam.pitch);
-				fprintf(stdout, "cam.yaw   = %ff;\n", cam.yaw);
+				light.y += (float)(ypos - mouse.ypos) * 0.005f;
 				break;
 		}
         mouse.xpos = xpos;
@@ -524,6 +519,14 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
         case 'Z':
             cam.p -= cam.speed * cam.up * frameTime;
             break;
+		case 'P':
+			fprintf(stdout, "cam.p       = { %ff, %ff, %ff };\n", cam.p.x, cam.p.y, cam.p.z);
+			fprintf(stdout, "cam.forward = { %ff, %ff, %ff };\n", cam.forward.x, cam.forward.y, cam.forward.z);
+			fprintf(stdout, "cam.right   = { %ff, %ff, %ff };\n", cam.right.x, cam.right.y, cam.right.z);
+			fprintf(stdout, "cam.up      = { %ff, %ff, %ff };\n", cam.up.x, cam.up.y, cam.up.z);
+			fprintf(stdout, "cam.pitch = %ff;\n", cam.pitch);
+			fprintf(stdout, "cam.yaw   = %ff;\n", cam.yaw);
+			break;
         }
     }
 }
@@ -607,6 +610,8 @@ int main(int argc, char* argv[])
 
     // Prepare rectangle for drawing texture
     // rendered using intersection results
+	try {
+
     InitGl();
 
     InitCl();
@@ -665,6 +670,12 @@ int main(int argc, char* argv[])
         DrawScene(static_cast<float>(glfwGetTime()));
         glfwSwapBuffers(window);
     }
+
+	}
+	catch (const std::runtime_error& e) {
+		std::cerr << e.what() << std::endl;
+		return EXIT_FAILURE;
+	}
 
     // Cleanup
     IntersectionApi::Delete(g_api); g_api = nullptr;

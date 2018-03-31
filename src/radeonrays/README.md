@@ -17,6 +17,7 @@
 * Add soft shadows
 * Add a more complex camera model (for instance depth of field)
 * Diffuse interreflection?
+* Diffuse textures
 * Heck, it would also be nice to use montecarlo generation and denoising!
 
 ## Built With
