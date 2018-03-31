@@ -35,6 +35,7 @@ THE SOFTWARE.
 #include <iomanip>
 #include <sstream>
 #include "shader_manager.h"
+#define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
 using namespace RadeonRays;
@@ -64,10 +65,10 @@ namespace {
     struct Camera
     {
         // Camera coordinate frame
-        float3 forward;
-        float3 up;
-        float3 right;
-        float3 p;
+        RadeonRays::float3 forward;
+		RadeonRays::float3 up;
+		RadeonRays::float3 right;
+		RadeonRays::float3 p;
 
         // Near and far Z
         float2 zcap;
@@ -81,7 +82,7 @@ namespace {
     } cam;
 
     // Point light position
-    float3 light = { -0.01f, 1.85f, 0.1f };
+	RadeonRays::float3 light = { -0.01f, 1.85f, 0.1f };
 
     //Mouse struct for mouse handling
     struct MOUSE {
@@ -127,11 +128,16 @@ void InitData()
 {
     std::string basepath = "data/";
     std::string filename = basepath + "orig.objm";
-    std::string res = LoadObj(g_objshapes, g_objmaterials, filename.c_str(), basepath.c_str());
-    if (res != "")
-    {
-        throw std::runtime_error(res);
-    }
+	std::string err;
+    bool res = LoadObj(g_objshapes, g_objmaterials, err, filename.c_str(), basepath.c_str(), triangulation | calculate_normals);
+	if (!err.empty())
+		fprintf(stderr, "%s\n", err.c_str());
+
+	if (!res)
+		throw std::runtime_error("Loading obj file not succesfull");
+
+	fprintf(stdout, "# of shapes    : %u\n", static_cast<uint32_t>(g_objshapes.size()));
+	fprintf(stdout, "# of materials : %u\n", static_cast<uint32_t>(g_objmaterials.size()));
 
     // Load data to CL
     std::vector<float> verts;
@@ -142,9 +148,9 @@ void InitData()
     std::vector<int> indents;
     int indent = 0;
 
-    for (int id = 0; id < g_objshapes.size(); ++id)
+    for (auto &shape : g_objshapes)
     {
-        const mesh_t& mesh = g_objshapes[id].mesh;
+        const mesh_t& mesh = shape.mesh;
         verts.insert(verts.end(), mesh.positions.begin(), mesh.positions.end());
         normals.insert(normals.end(), mesh.normals.begin(), mesh.normals.end());
         inds.insert(inds.end(), mesh.indices.begin(), mesh.indices.end());
@@ -200,6 +206,7 @@ void InitCl()
             if (platforms[i].GetDevice(d).GetType() != CL_DEVICE_TYPE_GPU)
                 continue;
             g_context = CLWContext::Create(platforms[i].GetDevice(d));
+			fprintf(stdout, "Status: Using %s with %s\n", platforms[i].GetName().c_str(), platforms[i].GetDevice(d).GetName().c_str());
             break;
         }
 
@@ -259,7 +266,7 @@ Buffer* GeneratePrimaryRays()
     return CreateFromOpenClBuffer(g_api, ray_buffer_cl);
 }
 
-Buffer* GenerateShadowRays(CLWBuffer<Intersection> & isect, const float3& light)
+Buffer* GenerateShadowRays(CLWBuffer<Intersection> & isect, const RadeonRays::float3& light)
 {
     //pass data to buffers
     cl_float4 light_cl = { light.x,
@@ -290,7 +297,7 @@ Buffer* GenerateShadowRays(CLWBuffer<Intersection> & isect, const float3& light)
     return CreateFromOpenClBuffer(g_api, shadow_rays_buffer_cl);
 }
 
-Buffer* Shading(const CLWBuffer<Intersection> &isect, const CLWBuffer<int> &occluds, const float3& light)
+Buffer* Shading(const CLWBuffer<Intersection> &isect, const CLWBuffer<int> &occluds, const RadeonRays::float3& light)
 {
     //pass data to buffers
     cl_float4 light_cl = { light.x,
@@ -408,7 +415,7 @@ void DrawScene(float time)
                 cam.forward.z = cosf(cam.yaw) * cosf(cam.pitch);
                 cam.forward.normalize();
 
-                cam.right = cross(cam.forward, float3(0.0f, 1.0f, 0.0f));
+                cam.right = cross(cam.forward, RadeonRays::float3(0.0f, 1.0f, 0.0f));
                 cam.right.normalize();
 
                 cam.up = cross(cam.right, cam.forward);
@@ -612,7 +619,7 @@ int main(int argc, char* argv[])
         shape_t& objshape = g_objshapes[id];
         float* vertdata = objshape.mesh.positions.data();
         int nvert = static_cast<int>(objshape.mesh.positions.size());
-        int* indices = objshape.mesh.indices.data();
+        int* indices = reinterpret_cast<int *>(objshape.mesh.indices.data());
         int nfaces = static_cast<int>(objshape.mesh.indices.size() / 3);
         Shape* shape = g_api->CreateMesh(vertdata, nvert, 3 * sizeof(float), indices, 0, nullptr, nfaces);
 
