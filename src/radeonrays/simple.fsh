@@ -9,12 +9,13 @@
  */
 
 uniform sampler2D g_Texture;
+uniform int u_fxaaOn;
 
-float u_lumaThreshold = 0.5;
-float u_mulReduce = 1.0 / 8.0;
-float u_minReduce = 1.0 / 128.0;
-vec2 u_texelStep = vec2(1.0 / 800.0, 1.0 / 600.0);
-float u_maxSpan = 8.0;
+uniform float u_lumaThreshold;
+uniform float u_mulReduce;
+uniform float u_minReduce;
+uniform vec2 u_texelStep;
+uniform float u_maxSpan;
 
 varying vec2 Texcoord;
 
@@ -22,6 +23,13 @@ void main()
 {
 	// Sampling texel
 	vec3 rgbM = texture2D(g_Texture, Texcoord).rgb;
+
+	if (u_fxaaOn == 0)
+	{
+		gl_FragColor = vec4(rgbM, 1.0);
+
+		return;
+	}
 
 	// Sampling neighbour texels. Offsets are adapted to OpenGL texture coordinates.
 	vec3 rgbNW = textureOffset(g_Texture, Texcoord, ivec2(-1, 1)).rgb;

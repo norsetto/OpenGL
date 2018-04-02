@@ -48,6 +48,20 @@ namespace {
     GLuint g_vertex_buffer, g_index_buffer;
     GLuint g_texture;
     std::unique_ptr<ShaderManager> g_shader_manager;
+	GLint g_texelStepLocation;
+	GLint g_fxaaOnLocation;
+
+	GLint g_lumaThresholdLocation;
+	GLint g_mulReduceLocation;
+	GLint g_minReduceLocation;
+	GLint g_maxSpanLocation;
+
+	int g_fxaaOn = 1;
+
+	float g_lumaThreshold = 0.5f;
+	float g_mulReduceReciprocal = 8.0f;
+	float g_minReduceReciprocal = 128.0f;
+	float g_maxSpan = 8.0f;
 
     IntersectionApi* g_api;
 
@@ -339,6 +353,16 @@ void InitGl()
     glUniform1i(texloc, 0);
     position_attr = glGetAttribLocation(program, "inPosition");
     texcoord_attr = glGetAttribLocation(program, "inTexcoord");
+	g_texelStepLocation = glGetUniformLocation(program, "u_texelStep");
+	g_fxaaOnLocation = glGetUniformLocation(program, "u_fxaaOn");
+
+	g_lumaThresholdLocation = glGetUniformLocation(program, "u_lumaThreshold");
+	g_mulReduceLocation = glGetUniformLocation(program, "u_mulReduce");
+	g_minReduceLocation = glGetUniformLocation(program, "u_minReduce");
+	g_maxSpanLocation = glGetUniformLocation(program, "u_maxSpan");
+
+	glUseProgram(program);
+	glUniform2f(g_texelStepLocation, 1.0f / (float)g_window_width, 1.0f / (float)g_window_height);
 
     glGenVertexArrays(1, &g_vao);
     glGenBuffers(1, &g_vertex_buffer);
@@ -470,6 +494,12 @@ void DrawScene(float time)
 
     // shader data
     glUseProgram(program);
+	glUniform1i(g_fxaaOnLocation, g_fxaaOn);
+
+	glUniform1f(g_lumaThresholdLocation, g_lumaThreshold);
+	glUniform1f(g_mulReduceLocation, 1.0f / g_mulReduceReciprocal);
+	glUniform1f(g_minReduceLocation, 1.0f / g_minReduceReciprocal);
+	glUniform1f(g_maxSpanLocation, g_maxSpan);
 
     // draw rectangle
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, nullptr);
@@ -526,6 +556,33 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 			fprintf(stdout, "cam.up      = { %ff, %ff, %ff };\n", cam.up.x, cam.up.y, cam.up.z);
 			fprintf(stdout, "cam.pitch = %ff;\n", cam.pitch);
 			fprintf(stdout, "cam.yaw   = %ff;\n", cam.yaw);
+			break;
+		case 'F':
+			g_fxaaOn = !g_fxaaOn;
+			break;
+		case '1':
+			g_lumaThreshold -= 0.05f;
+			break;
+		case '2':
+			g_lumaThreshold += 0.05f;
+			break;
+		case '3':
+			g_mulReduceReciprocal *= 2.0f;
+			break;
+		case '4':
+			g_mulReduceReciprocal /= 2.0f;
+			break;
+		case '5':
+			g_minReduceReciprocal *= 2.0f;
+			break;
+		case '6':
+			g_minReduceReciprocal /= 2.0f;
+			break;
+		case '7':
+			g_maxSpan -= 1.0f;
+			break;
+		case '8':
+			g_maxSpan += 1.0f;
 			break;
         }
     }
