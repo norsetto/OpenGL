@@ -1,0 +1,1 @@
+option('rr_SDK_home', type : 'string', value : '/home/cesare/RadeonRays_SDK', description : 'The place where you installed the RadeonRays SDK')

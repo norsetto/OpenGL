@@ -8,7 +8,7 @@
 3. Track down the (possibly race condition?) that sometime causes api->mesh to segfault
 
 ## Things I'd like to add:
-* Cmake
+* ~~Cmake~~ Test meson in windows
 * It would be nice to use an openCL buffer for the camera (as in the original). But how to update it!?
 * ~~A somewhat more complex scene~~
 * Obviously reflections (glossy?) and refractions

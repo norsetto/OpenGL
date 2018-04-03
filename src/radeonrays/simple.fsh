@@ -1,3 +1,5 @@
+#version 130
+
 /**
  * OpenGL 4 - Example 42
  *
