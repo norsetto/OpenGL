@@ -31,6 +31,7 @@ THE SOFTWARE.
 #include <iostream>
 #include <memory>
 #include <chrono>
+#include <map>
 #include <string>
 #include <iomanip>
 #include <sstream>
@@ -138,6 +139,18 @@ namespace {
     GLuint texcoord_attr;
 }
 
+void loadTexture(const std::string &filename, uint32_t &index)
+{
+	static uint32_t texIndex = 1;
+
+	if (!filename.empty()) {
+		index = texIndex++;
+
+		// LOAD TEXTURE HERE
+	}
+	fprintf(stdout, "%d %s\n", index, filename.c_str());
+}
+
 void InitData()
 {
     std::string basepath = "data/";
@@ -160,7 +173,22 @@ void InitData()
     std::vector<float> ambient;
     std::vector<float> diffuse;
     std::vector<int> indents;
+	std::vector<uint32_t> texture;
     int indent = 0;
+
+	// find unique textures
+	std::map<std::string, uint32_t> textureDiffuseMaps;
+	for (auto &shape : g_objshapes)
+	{
+		const mesh_t& mesh = shape.mesh;
+		for (int mat_id : mesh.material_ids)
+		{
+			const material_t& mat = g_objmaterials[mat_id];
+			textureDiffuseMaps[mat.diffuse_texname.data()] = {};
+		}
+	}
+	for (auto &texture : textureDiffuseMaps)
+		loadTexture(texture.first, texture.second);
 
     for (auto &shape : g_objshapes)
     {
@@ -177,6 +205,8 @@ void InitData()
             diffuse.push_back(mat.diffuse[0]);
             diffuse.push_back(mat.diffuse[1]);
             diffuse.push_back(mat.diffuse[2]);
+
+			texture.push_back(textureDiffuseMaps[mat.diffuse_texname.data()]);
         }
 
         // add additional empty data to simplify indentation in arrays
