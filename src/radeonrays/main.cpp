@@ -688,7 +688,7 @@ int main(int argc, char* argv[])
     {
         shape_t& objshape = g_objshapes[id];
         float* vertdata = objshape.mesh.positions.data();
-        int nvert = static_cast<int>(objshape.mesh.positions.size());
+        int nvert = static_cast<int>(objshape.mesh.positions.size() / 3);
         int* indices = reinterpret_cast<int *>(objshape.mesh.indices.data());
         int nfaces = static_cast<int>(objshape.mesh.indices.size() / 3);
         Shape* shape = g_api->CreateMesh(vertdata, nvert, 3 * sizeof(float), indices, 0, nullptr, nfaces);
