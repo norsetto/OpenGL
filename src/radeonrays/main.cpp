@@ -35,9 +35,14 @@ THE SOFTWARE.
 #include <string>
 #include <iomanip>
 #include <sstream>
+
 #include "shader_manager.h"
+
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 using namespace RadeonRays;
 using namespace tinyobj;
@@ -45,6 +50,17 @@ using namespace tinyobj;
 namespace {
     std::vector<shape_t> g_objshapes;
     std::vector<material_t> g_objmaterials;
+
+	unsigned char * texturePool = nullptr;
+
+	struct Texture {
+		uint32_t width;
+		uint32_t height;
+		size_t   offset;
+
+		Texture(uint32_t width, uint32_t height, size_t offset) : width(width), height(height), offset(offset) {}
+		Texture(void) : width(0), height(0), offset(0) {}
+	};
 
     GLuint g_vertex_buffer, g_index_buffer;
     GLuint g_texture;
@@ -75,6 +91,7 @@ namespace {
     CLWBuffer<float> g_ambient;
     CLWBuffer<float> g_diffuse;
     CLWBuffer<int> g_indent;
+	CLWBuffer<Texture> g_textures;
 
     //Camera
     struct Camera
@@ -139,16 +156,39 @@ namespace {
     GLuint texcoord_attr;
 }
 
-void loadTexture(const std::string &filename, uint32_t &index)
+Texture loadTexture(const std::string &filename)
 {
-	static uint32_t texIndex = 1;
+	Texture texture = {};
+	static size_t poolSize = 0;
 
 	if (!filename.empty()) {
-		index = texIndex++;
 
-		// LOAD TEXTURE HERE
+		int width = 0;
+		int height = 0;
+		int num_components = 0;
+
+		std::unique_ptr<unsigned char, void(*)(void*)> stbi_data(stbi_load(filename.c_str(), &width, &height, &num_components, 3), stbi_image_free);
+
+		if ((!stbi_data) ||
+			(0 >= width) ||
+			(0 >= height) ||
+			(0 >= num_components)) {
+			std::stringstream errorMessage;
+			errorMessage << "could not read image " << filename << " !";
+			throw std::runtime_error(errorMessage.str().c_str());
+		}
+
+		size_t data_size = static_cast<size_t>(width * height * num_components);
+		texture.width = static_cast<uint32_t>(width);
+		texture.height = static_cast<uint32_t>(height);
+		texture.offset = poolSize;
+		poolSize += data_size;
+
+		texturePool = (unsigned char *) std::realloc(texturePool, poolSize);
+		std::memcpy(texturePool + texture.offset, stbi_data.get(), data_size);
 	}
-	fprintf(stdout, "%d %s\n", index, filename.c_str());
+
+	return texture;
 }
 
 void InitData()
@@ -173,11 +213,11 @@ void InitData()
     std::vector<float> ambient;
     std::vector<float> diffuse;
     std::vector<int> indents;
-	std::vector<uint32_t> texture;
+	std::vector<Texture> texture;
     int indent = 0;
 
 	// find unique textures
-	std::map<std::string, uint32_t> textureDiffuseMaps;
+	std::map<std::string, Texture> textureDiffuseMaps;
 	for (auto &shape : g_objshapes)
 	{
 		const mesh_t& mesh = shape.mesh;
@@ -187,8 +227,9 @@ void InitData()
 			textureDiffuseMaps[mat.diffuse_texname.data()] = {};
 		}
 	}
-	for (auto &texture : textureDiffuseMaps)
-		loadTexture(texture.first, texture.second);
+	texturePool = (unsigned char *)malloc(0);
+	for (auto &texture : textureDiffuseMaps) 
+		texture.second = loadTexture(texture.first);
 
     for (auto &shape : g_objshapes)
     {
@@ -231,6 +272,7 @@ void InitData()
     g_ambient = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, ambient.size(), ambient.data());
     g_diffuse = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, diffuse.size(), diffuse.data());
     g_indent = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, indents.size(), indents.data());
+	g_textures = CLWBuffer<Texture>::Create(g_context, CL_MEM_READ_ONLY, texture.size(), texture.data());
 }
 
 void InitCl()
@@ -618,30 +660,6 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 }
 
-void onWindowSize(GLFWwindow * window, int width, int height)
-{/*
-    g_window_width = width;
-    g_window_height = height;
-    k_raypack_size = g_window_width * g_window_height;
-    glViewport(0, 0, g_window_width, g_window_height);
-
-    delete ray_buffer_cl;
-    delete shadow_rays_buffer_cl;
-    delete isect_buffer_cl;
-    delete occl_buffer_cl;
-    delete tex_buffer_cl;
-
-    ray_buffer_cl = CLWBuffer<ray>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
-    shadow_rays_buffer_cl = CLWBuffer<ray>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
-    isect_buffer_cl = CLWBuffer<Intersection>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
-    occl_buffer_cl = CLWBuffer<int>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
-    tex_buffer_cl = CLWBuffer<unsigned char>::Create(g_context, CL_MEM_READ_ONLY, 4 * k_raypack_size);
-
-    isect_buffer = CreateFromOpenClBuffer(g_api, isect_buffer_cl);
-    occl_buffer = CreateFromOpenClBuffer(g_api, occl_buffer_cl);
-    */
-}
-
 void onMouseButton(GLFWwindow *window, int button, int action, int mods)
 {
     mouse.button = button;
@@ -679,7 +697,6 @@ int main(int argc, char* argv[])
     glfwMakeContextCurrent(window);
     glfwSwapInterval(0);
     glfwSetKeyCallback(window, onKey);
-    glfwSetWindowSizeCallback(window, onWindowSize);
     glfwSetMouseButtonCallback(window, onMouseButton);
     //glfwSetCursorPosCallback(window, mouseMove_callback);
     //glfwSetScrollCallback(window, mouseWheel_callback);
@@ -766,6 +783,7 @@ int main(int argc, char* argv[])
 
     // Cleanup
     IntersectionApi::Delete(g_api); g_api = nullptr;
+	free(texturePool);
     glfwDestroyWindow(window);
     glfwTerminate();
 
