@@ -3,7 +3,6 @@
 ![Sibenik in all its raytracing glory](sibenik.png)
 
 ## Things I'd like to add:
-* Diffuse textures w. linear filtering
 * Bump maps
 * Transparency
 * Depth of field

@@ -59,6 +59,11 @@ typedef struct _Texture
     unsigned long int offset;
 } Texture;
 
+float3 lerp(float3 a, float3 b, float w)
+{
+	return a + w*(b - a);
+}
+
 float4 ConvertFromBarycentric3(__global const float* vec,
                                __global const int* ind,
                                int prim_id,
@@ -236,14 +241,41 @@ __kernel void Shading(//scene
 				//compute pixel texture coordinates (nearest filtering)
 				float2 uv = ConvertFromBarycentric2(texcoords + ind*2, ids + ind, prim_id, isect[k].uvwt);
 				uv -= floor(uv);
-				unsigned int s = clamp((unsigned int)floor(uv.x * (float)w), 0u, w - 1u);
-				unsigned int t = clamp((unsigned int)floor(uv.y * (float)h), 0u, h - 1u);
+				unsigned int s0 = clamp((unsigned int)floor(uv.x * (float)w), 0u, w - 1u);
+				unsigned int t0 = clamp((unsigned int)floor(uv.y * (float)h), 0u, h - 1u);
 
-				//fetch textel
+				// Calculate additional samples for linear filtering
+				unsigned int s1 = min(s0 + 1u, w - 1u);
+				unsigned int t1 = min(t0 + 1u, h - 1u);
+
+				// Calculate weights for linear filtering
+				float wx = uv.x * (float)w - floor(uv.x * (float)w);
+				float wy = uv.y * (float)h - floor(uv.y * (float)h);
+
+				//fetch texels
 				__global uchar const* texdata = texturePool + textures[texture_id].offset;
-				diff_col.x = (float)texdata[0 + 3 * (w * t + s)] / 255.f;
-				diff_col.y = (float)texdata[1 + 3 * (w * t + s)] / 255.f;
-				diff_col.z = (float)texdata[2 + 3 * (w * t + s)] / 255.f;
+
+				float3 sample1;
+				sample1.x = (float)texdata[0 + 3 * (w * t0 + s0)] / 255.f;
+				sample1.y = (float)texdata[1 + 3 * (w * t0 + s0)] / 255.f;
+				sample1.z = (float)texdata[2 + 3 * (w * t0 + s0)] / 255.f;
+
+				float3 sample2;
+				sample2.x = (float)texdata[0 + 3 * (w * t0 + s1)] / 255.f;
+				sample2.y = (float)texdata[1 + 3 * (w * t0 + s1)] / 255.f;
+				sample2.z = (float)texdata[2 + 3 * (w * t0 + s1)] / 255.f;
+
+				float3 sample3;
+				sample3.x = (float)texdata[0 + 3 * (w * t1 + s0)] / 255.f;
+				sample3.y = (float)texdata[1 + 3 * (w * t1 + s0)] / 255.f;
+				sample3.z = (float)texdata[2 + 3 * (w * t1 + s0)] / 255.f;
+
+				float3 sample4;
+				sample4.x = (float)texdata[0 + 3 * (w * t1 + s1)] / 255.f;
+				sample4.y = (float)texdata[1 + 3 * (w * t1 + s1)] / 255.f;
+				sample4.z = (float)texdata[2 + 3 * (w * t1 + s1)] / 255.f;
+
+				diff_col.xyz = lerp(lerp(sample1, sample2, wx), lerp(sample3, sample4, wx), wy);
 				amb_col.xyz = 0.2f * diff_col.xyz;
 			}
 
