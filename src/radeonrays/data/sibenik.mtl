@@ -49,10 +49,10 @@ newmtl kamen_zid
 	Kd 0.734118 0.730588 0.674118
 	Ks 0.000000 0.000000 0.000000
 	Ke 0.000000 0.000000 0.000000
-	map_Ka kamen.png
-	map_Kd kamen.png
-        map_bump kamen-bump.png
-        bump kamen-bump.png
+	map_Ka data/kamen.png
+	map_Kd data/kamen.png
+    map_bump data/kamen-bump.png
+    bump data/kamen-bump.png
 
 # Pillars
 
@@ -67,8 +67,10 @@ newmtl stupovi
 	Kd 0.734118 0.730588 0.674118
 	Ks 0.000000 0.000000 0.000000
 	Ke 0.000000 0.000000 0.000000
-	map_Ka KAMEN-stup.png
-	map_Kd KAMEN-stup.png
+	map_Ka data/kamen-stup.png
+	map_Kd data/kamen-stup.png
+
+# Floor
 
 newmtl pod
 	Ns 8.000000
@@ -81,10 +83,10 @@ newmtl pod
 	Kd 0.734118 0.709412 0.674118
 	Ks 0.000000 0.000000 0.000000
 	Ke 0.000000 0.000000 0.000000
-	map_Ka mramor6x6.png
-	map_Kd mramor6x6.png
-	map_bump mramor6x6-bump.png
-	bump mramor6x6-bump.png
+	map_Ka data/mramor6x6.png
+	map_Kd data/mramor6x6.png
+	map_bump data/mramor6x6-bump.png
+	bump data/mramor6x6-bump.png
 
 newmtl pod_tepih
 	Ns 8.000000
@@ -109,10 +111,10 @@ newmtl pod_rub
 	Kd 0.734118 0.730588 0.674118
 	Ks 0.000000 0.000000 0.000000
 	Ke 0.000000 0.000000 0.000000
-	map_Ka kamen.png
-	map_Kd kamen.png
-        map_bump kamen-bump.png
-        bump kamen-bump.png
+	map_Ka data/kamen.png
+	map_Kd data/kamen.png
+    map_bump data/kamen-bump.png
+    bump data/kamen-bump.png
 
 # Stone wall window
 
@@ -127,10 +129,10 @@ newmtl kamen_zid_prozor
 	Kd 0.734118 0.730588 0.674118
 	Ks 0.000000 0.000000 0.000000
 	Ke 0.000000 0.000000 0.000000
-	map_Ka kamen.png
-	map_Kd kamen.png
-        map_bump kamen-bump.png
-        bump kamen-bump.png
+	map_Ka data/kamen.png
+	map_Kd data/kamen.png
+    map_bump data/kamen-bump.png
+    bump data/kamen-bump.png
 
 newmtl zid_vani
 	Ns 8.000000
@@ -143,10 +145,10 @@ newmtl zid_vani
 	Kd 0.734118 0.730588 0.674118
 	Ks 0.000000 0.000000 0.000000
 	Ke 0.000000 0.000000 0.000000
-	map_Ka kamen.png
-	map_Kd kamen.png
-        map_bump kamen-bump.png
-        bump kamen-bump.png
+	map_Ka data/kamen.png
+	map_Kd data/kamen.png
+    map_bump data/kamen-bump.png
+    bump data/kamen-bump.png
 
 newmtl kamen_zid_parapet
 	Ns 8.000000
@@ -159,8 +161,8 @@ newmtl kamen_zid_parapet
 	Kd 0.734118 0.730588 0.674118
 	Ks 0.000000 0.000000 0.000000
 	Ke 0.000000 0.000000 0.000000
-	map_Ka KAMEN-stup.png
-	map_Kd KAMEN-stup.png
+	map_Ka data/kamen-stup.png
+	map_Kd data/kamen-stup.png
 
 # Red glass
 
@@ -189,8 +191,8 @@ newmtl rozeta
 	Kd 0.734118 0.730588 0.674118
 	Ks 0.000000 0.000000 0.000000
 	Ke 0.000000 0.000000 0.000000
-	map_Ka KAMEN-stup.png
-	map_Kd KAMEN-stup.png
+	map_Ka data/kamen-stup.png
+	map_Kd data/kamen-stup.png
 
 # Green glass
 newmtl staklo_zeleno

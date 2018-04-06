@@ -52,6 +52,7 @@ namespace {
     std::vector<material_t> g_objmaterials;
 
 	unsigned char * texturePool = nullptr;
+	size_t texturePoolSize = 0;
 
 	struct Texture {
 		uint32_t width;
@@ -87,11 +88,13 @@ namespace {
     CLWProgram g_program;
     CLWBuffer<float> g_positions;
     CLWBuffer<float> g_normals;
-    CLWBuffer<int> g_indices;
+	CLWBuffer<float> g_texcoords;
+	CLWBuffer<int> g_indices;
     CLWBuffer<float> g_ambient;
     CLWBuffer<float> g_diffuse;
     CLWBuffer<int> g_indent;
 	CLWBuffer<Texture> g_textures;
+	CLWBuffer<unsigned char> g_texturePool;
 
     //Camera
     struct Camera
@@ -159,7 +162,6 @@ namespace {
 Texture loadTexture(const std::string &filename)
 {
 	Texture texture = {};
-	static size_t poolSize = 0;
 
 	if (!filename.empty()) {
 
@@ -172,19 +174,19 @@ Texture loadTexture(const std::string &filename)
 		if ((!stbi_data) ||
 			(0 >= width) ||
 			(0 >= height) ||
-			(0 >= num_components)) {
+			(3 != num_components)) {
 			std::stringstream errorMessage;
 			errorMessage << "could not read image " << filename << " !";
 			throw std::runtime_error(errorMessage.str().c_str());
 		}
 
-		size_t data_size = static_cast<size_t>(width * height * num_components);
+		size_t data_size = static_cast<size_t>(width * height * 3 * sizeof(unsigned char));
 		texture.width = static_cast<uint32_t>(width);
 		texture.height = static_cast<uint32_t>(height);
-		texture.offset = poolSize;
-		poolSize += data_size;
+		texture.offset = texturePoolSize;
+		texturePoolSize += data_size;
 
-		texturePool = (unsigned char *) std::realloc(texturePool, poolSize);
+		texturePool = (unsigned char *) std::realloc(texturePool, texturePoolSize);
 		std::memcpy(texturePool + texture.offset, stbi_data.get(), data_size);
 	}
 
@@ -207,13 +209,14 @@ void InitData()
 	fprintf(stdout, "# of materials : %u\n", static_cast<uint32_t>(g_objmaterials.size()));
 
     // Load data to CL
-    std::vector<float> verts;
-    std::vector<float> normals;
-    std::vector<int> inds;
-    std::vector<float> ambient;
-    std::vector<float> diffuse;
-    std::vector<int> indents;
-	std::vector<Texture> texture;
+	std::vector<float> verts = {};
+	std::vector<float> normals = {};
+	std::vector<float> texcoords = {};
+	std::vector<int> inds = {};
+	std::vector<float> ambient = {};
+	std::vector<float> diffuse = {};
+	std::vector<int> indents = {};
+	std::vector<Texture> texture = {};
     int indent = 0;
 
 	// find unique textures
@@ -236,6 +239,7 @@ void InitData()
         const mesh_t& mesh = shape.mesh;
         verts.insert(verts.end(), mesh.positions.begin(), mesh.positions.end());
         normals.insert(normals.end(), mesh.normals.begin(), mesh.normals.end());
+		texcoords.insert(texcoords.end(), mesh.texcoords.begin(), mesh.texcoords.end());
         inds.insert(inds.end(), mesh.indices.begin(), mesh.indices.end());
         for (int mat_id : mesh.material_ids)
         {
@@ -256,8 +260,8 @@ void InitData()
             int count = static_cast<int>(mesh.indices.size() - mesh.positions.size() / 3);
             for (int i = 0; i < count; ++i)
             {
-                verts.push_back(0.f); normals.push_back(0.f);
-                verts.push_back(0.f); normals.push_back(0.f);
+				verts.push_back(0.f); normals.push_back(0.f); texcoords.push_back(0.f);
+                verts.push_back(0.f); normals.push_back(0.f); texcoords.push_back(0.f);
                 verts.push_back(0.f); normals.push_back(0.f);
             }
         }
@@ -268,11 +272,13 @@ void InitData()
 
     g_positions = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, verts.size(), verts.data());
     g_normals = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, normals.size(), normals.data());
-    g_indices = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, inds.size(), inds.data());
+	g_texcoords = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, texcoords.size(), texcoords.data());
+	g_indices = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, inds.size(), inds.data());
     g_ambient = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, ambient.size(), ambient.data());
     g_diffuse = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, diffuse.size(), diffuse.data());
     g_indent = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, indents.size(), indents.data());
 	g_textures = CLWBuffer<Texture>::Create(g_context, CL_MEM_READ_ONLY, texture.size(), texture.data());
+	g_texturePool = CLWBuffer<unsigned char>::Create(g_context, CL_MEM_READ_ONLY, texturePoolSize, texturePool);
 }
 
 void InitCl()
@@ -366,13 +372,11 @@ Buffer* GenerateShadowRays(CLWBuffer<Intersection> & isect, const RadeonRays::fl
     kernel.SetArg(1, g_positions);
     kernel.SetArg(2, g_normals);
     kernel.SetArg(3, g_indices);
-    kernel.SetArg(4, g_ambient);
-    kernel.SetArg(5, g_diffuse);
-    kernel.SetArg(6, g_indent);
-    kernel.SetArg(7, isect);
-    kernel.SetArg(8, light_cl);
-    kernel.SetArg(9, g_window_width);
-    kernel.SetArg(10, g_window_height);
+    kernel.SetArg(4, g_indent);
+    kernel.SetArg(5, isect);
+    kernel.SetArg(6, light_cl);
+    kernel.SetArg(7, g_window_width);
+    kernel.SetArg(8, g_window_height);
 
     // Run generation kernel
     size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };
@@ -395,16 +399,19 @@ Buffer* Shading(const CLWBuffer<Intersection> &isect, const CLWBuffer<int> &occl
     CLWKernel kernel = g_program.GetKernel("Shading");
     kernel.SetArg(0, g_positions);
     kernel.SetArg(1, g_normals);
-    kernel.SetArg(2, g_indices);
-    kernel.SetArg(3, g_ambient);
-    kernel.SetArg(4, g_diffuse);
-    kernel.SetArg(5, g_indent);
-    kernel.SetArg(6, isect);
-    kernel.SetArg(7, occluds);
-    kernel.SetArg(8, light_cl);
-    kernel.SetArg(9, g_window_width);
-    kernel.SetArg(10, g_window_height);
-    kernel.SetArg(11, tex_buffer_cl);
+	kernel.SetArg(2, g_texcoords);
+	kernel.SetArg(3, g_indices);
+    kernel.SetArg(4, g_ambient);
+    kernel.SetArg(5, g_diffuse);
+	kernel.SetArg(6, g_texturePool);
+    kernel.SetArg(7, g_indent);
+	kernel.SetArg(8, g_textures);
+	kernel.SetArg(9, isect);
+    kernel.SetArg(10, occluds);
+    kernel.SetArg(11, light_cl);
+    kernel.SetArg(12, g_window_width);
+    kernel.SetArg(13, g_window_height);
+    kernel.SetArg(14, tex_buffer_cl);
 
     // Run generation kernel
     size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };
