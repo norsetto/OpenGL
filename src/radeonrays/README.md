@@ -4,7 +4,8 @@
 
 ## Things I'd like to add:
 * Bump maps
-* Transparency
+* Transparency (for light)
+* Refraction and reflection
 * Depth of field
 * Soft shadows
 

@@ -29,6 +29,7 @@ newmtl sprljci
 newmtl staklo
 	Ns 256.000000
 	Ni 1.000000
+	d 0.000000
 	Tf 0.5 0.5 0.5
 	illum 6
 	Ka 0.020000 0.020000 0.020000
@@ -169,8 +170,8 @@ newmtl kamen_zid_parapet
 newmtl staklo_crveno
 	Ns 256.000000
 	Ni 1.000000
-	d 0.800000
-	Tr 0.200000
+	d 1.000000
+	Tr 0.000000
 	Tf 0.800000 0.800000 0.800000 
 	illum 2
 	Ka 0.088235 0.020784 0.009804
@@ -218,6 +219,7 @@ newmtl staklo_plavo
 	Ks 0.1 0.1 0.1
 	Ke 0.000000 0.000000 0.000000
 
+# Yellow glass
 newmtl staklo_zuto
 	Ns 256.000000
 	Ni 1.000000

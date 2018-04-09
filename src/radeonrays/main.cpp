@@ -92,7 +92,8 @@ namespace {
 	CLWBuffer<int> g_indices;
     CLWBuffer<float> g_ambient;
     CLWBuffer<float> g_diffuse;
-    CLWBuffer<int> g_indent;
+	CLWBuffer<float> g_dissolve;
+	CLWBuffer<int> g_indent;
 	CLWBuffer<Texture> g_textures;
 	CLWBuffer<unsigned char> g_texturePool;
 
@@ -215,6 +216,7 @@ void InitData()
 	std::vector<int> inds = {};
 	std::vector<float> ambient = {};
 	std::vector<float> diffuse = {};
+	std::vector<float> dissolve = {};
 	std::vector<int> indents = {};
 	std::vector<Texture> texture = {};
     int indent = 0;
@@ -244,12 +246,16 @@ void InitData()
         for (int mat_id : mesh.material_ids)
         {
             const material_t& mat = g_objmaterials[mat_id];
+
             ambient.push_back(mat.ambient[0]);
             ambient.push_back(mat.ambient[1]);
             ambient.push_back(mat.ambient[2]);
+
             diffuse.push_back(mat.diffuse[0]);
             diffuse.push_back(mat.diffuse[1]);
             diffuse.push_back(mat.diffuse[2]);
+
+			dissolve.push_back(mat.dissolve);
 
 			texture.push_back(textureDiffuseMaps[mat.diffuse_texname.data()]);
         }
@@ -276,7 +282,8 @@ void InitData()
 	g_indices = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, inds.size(), inds.data());
     g_ambient = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, ambient.size(), ambient.data());
     g_diffuse = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, diffuse.size(), diffuse.data());
-    g_indent = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, indents.size(), indents.data());
+	g_dissolve = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, dissolve.size(), dissolve.data());
+	g_indent = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, indents.size(), indents.data());
 	g_textures = CLWBuffer<Texture>::Create(g_context, CL_MEM_READ_ONLY, texture.size(), texture.data());
 	g_texturePool = CLWBuffer<unsigned char>::Create(g_context, CL_MEM_READ_ONLY, texturePoolSize, texturePool);
 }
@@ -356,6 +363,27 @@ Buffer* GeneratePrimaryRays()
     g_context.Flush(0);
 
     return CreateFromOpenClBuffer(g_api, ray_buffer_cl);
+}
+
+Buffer* GenerateSecondaryRays(const CLWBuffer<Intersection> &isect)
+{
+	//run kernel
+	CLWKernel kernel = g_program.GetKernel("GenerateSecondaryRays");
+	kernel.SetArg(0, ray_buffer_cl);
+	kernel.SetArg(1, g_indices);
+	kernel.SetArg(2, g_indent);
+	kernel.SetArg(3, g_dissolve);
+	kernel.SetArg(4, isect);
+	kernel.SetArg(5, g_window_width);
+	kernel.SetArg(6, g_window_height);
+
+	// Run generation kernel
+	size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };
+	size_t ls[] = { 8, 8 };
+	g_context.Launch2D(0, gs, ls, kernel);
+	g_context.Flush(0);
+
+	return CreateFromOpenClBuffer(g_api, ray_buffer_cl);
 }
 
 Buffer* GenerateShadowRays(CLWBuffer<Intersection> & isect, const RadeonRays::float3& light)
@@ -542,6 +570,12 @@ void DrawScene(float time)
 
     // Intersection
     g_api->QueryIntersection(ray_buffer, k_raypack_size, isect_buffer, nullptr, nullptr);
+
+	// Generate secondary rays
+	ray_buffer = GenerateSecondaryRays(isect_buffer_cl);
+
+	// Intersection again
+	g_api->QueryIntersection(ray_buffer, k_raypack_size, isect_buffer, nullptr, nullptr);
 
     // Generate shadow rays
     shadow_rays_buffer = GenerateShadowRays(isect_buffer_cl, light);

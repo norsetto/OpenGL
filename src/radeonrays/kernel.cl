@@ -181,6 +181,41 @@ __kernel void GenerateShadowRays(__global Ray* rays,
    }
 }
 
+__kernel void GenerateSecondaryRays(__global Ray* rays,
+				//scene
+				__global int* ids,
+                __global int* indents,
+                __global float* dissolve,
+                //intersection
+                __global Intersection* isect,
+                int width,
+                int height)
+{
+    int2 globalid;
+    globalid.x  = get_global_id(0);
+    globalid.y  = get_global_id(1);
+
+    // Check borders
+    if (globalid.x < width && globalid.y < height)
+    {
+        int k = globalid.y * width + globalid.x;
+        int shape_id = isect[k].shapeid;
+        int prim_id = isect[k].primid;
+
+        if (shape_id != -1 && prim_id != -1)
+        {
+            int ind = indents[shape_id];
+			int color_id = ind + prim_id;
+			if (dissolve[color_id] < 1.0f) {
+				//Set new ray origin
+				rays[k].o.xyz += (isect[k].uvwt.w + EPSILON) * rays[k].d.xyz;
+			} else {
+				//Set ray to inactive
+				rays[k].extra.y = 0x00000000;
+			}
+		}
+    }
+}
 
 __kernel void Shading(//scene
                 __global float* positions,
