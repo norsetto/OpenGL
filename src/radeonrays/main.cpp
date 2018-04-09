@@ -44,6 +44,8 @@ THE SOFTWARE.
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define MAX_BOUNCES 3
+
 using namespace RadeonRays;
 using namespace tinyobj;
 
@@ -92,7 +94,7 @@ namespace {
 	CLWBuffer<int> g_indices;
     CLWBuffer<float> g_ambient;
     CLWBuffer<float> g_diffuse;
-	CLWBuffer<float> g_dissolve;
+	CLWBuffer<float> g_ior;
 	CLWBuffer<int> g_indent;
 	CLWBuffer<Texture> g_textures;
 	CLWBuffer<unsigned char> g_texturePool;
@@ -216,7 +218,7 @@ void InitData()
 	std::vector<int> inds = {};
 	std::vector<float> ambient = {};
 	std::vector<float> diffuse = {};
-	std::vector<float> dissolve = {};
+	std::vector<float> ior = {};
 	std::vector<int> indents = {};
 	std::vector<Texture> texture = {};
     int indent = 0;
@@ -255,7 +257,7 @@ void InitData()
             diffuse.push_back(mat.diffuse[1]);
             diffuse.push_back(mat.diffuse[2]);
 
-			dissolve.push_back(mat.dissolve);
+			ior.push_back(mat.ior);
 
 			texture.push_back(textureDiffuseMaps[mat.diffuse_texname.data()]);
         }
@@ -282,7 +284,7 @@ void InitData()
 	g_indices = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, inds.size(), inds.data());
     g_ambient = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, ambient.size(), ambient.data());
     g_diffuse = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, diffuse.size(), diffuse.data());
-	g_dissolve = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, dissolve.size(), dissolve.data());
+	g_ior = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, ior.size(), ior.data());
 	g_indent = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, indents.size(), indents.data());
 	g_textures = CLWBuffer<Texture>::Create(g_context, CL_MEM_READ_ONLY, texture.size(), texture.data());
 	g_texturePool = CLWBuffer<unsigned char>::Create(g_context, CL_MEM_READ_ONLY, texturePoolSize, texturePool);
@@ -370,12 +372,13 @@ Buffer* GenerateSecondaryRays(const CLWBuffer<Intersection> &isect)
 	//run kernel
 	CLWKernel kernel = g_program.GetKernel("GenerateSecondaryRays");
 	kernel.SetArg(0, ray_buffer_cl);
-	kernel.SetArg(1, g_indices);
-	kernel.SetArg(2, g_indent);
-	kernel.SetArg(3, g_dissolve);
-	kernel.SetArg(4, isect);
-	kernel.SetArg(5, g_window_width);
-	kernel.SetArg(6, g_window_height);
+	kernel.SetArg(1, g_normals);
+	kernel.SetArg(2, g_indices);
+	kernel.SetArg(3, g_indent);
+	kernel.SetArg(4, g_ior);
+	kernel.SetArg(5, isect);
+	kernel.SetArg(6, g_window_width);
+	kernel.SetArg(7, g_window_height);
 
 	// Run generation kernel
 	size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };
@@ -571,11 +574,13 @@ void DrawScene(float time)
     // Intersection
     g_api->QueryIntersection(ray_buffer, k_raypack_size, isect_buffer, nullptr, nullptr);
 
-	// Generate secondary rays
-	ray_buffer = GenerateSecondaryRays(isect_buffer_cl);
+	for (uint32_t bounce = 0; bounce < MAX_BOUNCES; ++bounce) {
+		// Generate secondary rays
+		ray_buffer = GenerateSecondaryRays(isect_buffer_cl);
 
-	// Intersection again
-	g_api->QueryIntersection(ray_buffer, k_raypack_size, isect_buffer, nullptr, nullptr);
+		// Intersection again
+		g_api->QueryIntersection(ray_buffer, k_raypack_size, isect_buffer, nullptr, nullptr);
+	}
 
     // Generate shadow rays
     shadow_rays_buffer = GenerateShadowRays(isect_buffer_cl, light);

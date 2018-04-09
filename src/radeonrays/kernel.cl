@@ -183,9 +183,10 @@ __kernel void GenerateShadowRays(__global Ray* rays,
 
 __kernel void GenerateSecondaryRays(__global Ray* rays,
 				//scene
+				__global float* normals,
 				__global int* ids,
                 __global int* indents,
-                __global float* dissolve,
+                __global float* ior,
                 //intersection
                 __global Intersection* isect,
                 int width,
@@ -205,10 +206,41 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
         if (shape_id != -1 && prim_id != -1)
         {
             int ind = indents[shape_id];
-			int color_id = ind + prim_id;
-			if (dissolve[color_id] < 1.0f) {
-				//Set new ray origin
-				rays[k].o.xyz += (isect[k].uvwt.w + EPSILON) * rays[k].d.xyz;
+
+			// compute ratio of index of reflections (1.0f is vacuum~air)
+			float eta = 1.0f / ior[ind / 3 + prim_id];
+
+			if (eta != 1.0f) {
+
+				// compute normal at intersection point
+			    float4 norm = ConvertFromBarycentric3(normals + ind*3, ids + ind, prim_id, isect[k].uvwt);
+				norm = normalize(norm);
+
+				// compute cosine of angle between incident ray and local normal
+				float ndoti = -dot(norm.xyz, rays[k].d.xyz);
+
+				// revert the ratio of refraction indices if we are exiting the surface
+				if (ndoti < 0.f) {
+					eta = 1.f / eta;
+				}
+
+				float kappa = 1.0f - eta * eta * (1.0f - ndoti * ndoti);
+
+				if (kappa >= 0.f) {
+
+					float3 refract = eta * rays[k].d.xyz - (eta * ndoti + sqrt(kappa)) * norm.xyz;
+
+					//Set new ray origin
+					rays[k].o.xyz += (isect[k].uvwt.w + EPSILON) * rays[k].d.xyz;
+
+					//Set new ray direction
+					rays[k].d.xyz = normalize(refract);
+
+				} else {
+				//Set ray to inactive
+				rays[k].extra.y = 0x00000000;
+				}
+
 			} else {
 				//Set ray to inactive
 				rays[k].extra.y = 0x00000000;
@@ -267,7 +299,7 @@ __kernel void Shading(//scene
 						                diffuse[color_id + 2], 1.f);
 
 			//triangle texture (if any)
-			int texture_id = ind + prim_id;
+			int texture_id = ind / 3 + prim_id;
 			unsigned int w = textures[texture_id].w;
 			unsigned int h = textures[texture_id].h;
 
