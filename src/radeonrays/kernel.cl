@@ -237,8 +237,8 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 					rays[k].d.xyz = normalize(refract);
 
 				} else {
-				//Set ray to inactive
-				rays[k].extra.y = 0x00000000;
+					//Set new ray origin
+					rays[k].o.xyz += (isect[k].uvwt.w + EPSILON) * rays[k].d.xyz;
 				}
 
 			} else {

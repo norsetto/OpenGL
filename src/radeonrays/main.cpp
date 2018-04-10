@@ -44,7 +44,7 @@ THE SOFTWARE.
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#define MAX_BOUNCES 3
+#define MAX_BOUNCES 4
 
 using namespace RadeonRays;
 using namespace tinyobj;
@@ -196,10 +196,14 @@ Texture loadTexture(const std::string &filename)
 	return texture;
 }
 
-void InitData()
+void InitData(const char * filearg)
 {
     std::string basepath = "data/";
-    std::string filename = basepath + "sibenik.obj";
+	std::string filename;
+	if (filearg == nullptr)
+		filename = basepath + "sibenik.obj";
+	else
+		filename = basepath + filearg;
 	std::string err;
     bool res = LoadObj(g_objshapes, g_objmaterials, err, filename.c_str(), basepath.c_str(), triangulation | calculate_normals);
 	if (!err.empty())
@@ -767,7 +771,7 @@ int main(int argc, char* argv[])
     InitCl();
 
     // Load CornellBox model
-    InitData();
+    InitData(argv[1]);
 
     // Create api using already existing opencl context
     cl_device_id id = g_context.GetDevice(0).GetID();
