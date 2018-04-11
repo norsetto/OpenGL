@@ -2,9 +2,10 @@
 
 ![Sibenik in all its raytracing glory](sibenik.png)
 
-## Things I'd like to add:
+## Things I'd like to add/correct:
+* Light transmittance is still not good for multiple transparent surfaces
 * Bump maps
-* Transparency (for light)
+* Light refraction
 * Reflection
 * Depth of field
 * Soft shadows

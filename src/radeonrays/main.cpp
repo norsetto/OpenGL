@@ -152,7 +152,7 @@ namespace {
     CLWBuffer<ray> ray_buffer_cl;
     CLWBuffer<ray> shadow_rays_buffer_cl;
     CLWBuffer<Intersection> isect_buffer_cl;
-    CLWBuffer<int> occl_buffer_cl;
+    CLWBuffer<Intersection> occl_buffer_cl;
     CLWBuffer<unsigned char> tex_buffer_cl;
 
     //OpenGL buffers
@@ -422,7 +422,27 @@ Buffer* GenerateShadowRays(CLWBuffer<Intersection> & isect, const RadeonRays::fl
     return CreateFromOpenClBuffer(g_api, shadow_rays_buffer_cl);
 }
 
-Buffer* Shading(const CLWBuffer<Intersection> &isect, const CLWBuffer<int> &occluds, const RadeonRays::float3& light)
+Buffer* GenerateSecondaryShadowRays(CLWBuffer<Intersection> & occluds)
+{
+	//run kernel
+	CLWKernel kernel = g_program.GetKernel("GenerateSecondaryShadowRays");
+	kernel.SetArg(0, shadow_rays_buffer_cl);
+	kernel.SetArg(1, g_indent);
+	kernel.SetArg(2, g_ior);
+	kernel.SetArg(3, occluds);
+	kernel.SetArg(4, g_window_width);
+	kernel.SetArg(5, g_window_height);
+
+	// Run generation kernel
+	size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };
+	size_t ls[] = { 8, 8 };
+	g_context.Launch2D(0, gs, ls, kernel);
+	g_context.Flush(0);
+
+	return CreateFromOpenClBuffer(g_api, shadow_rays_buffer_cl);
+}
+
+Buffer* Shading(const CLWBuffer<Intersection> &isect, const CLWBuffer<Intersection> &occluds, const RadeonRays::float3& light)
 {
     //pass data to buffers
     cl_float4 light_cl = { light.x,
@@ -589,8 +609,16 @@ void DrawScene(float time)
     // Generate shadow rays
     shadow_rays_buffer = GenerateShadowRays(isect_buffer_cl, light);
 
-    // Occlusion
-    g_api->QueryOcclusion(shadow_rays_buffer, k_raypack_size, occl_buffer, nullptr, nullptr);
+    // Intersection
+    g_api->QueryIntersection(shadow_rays_buffer, k_raypack_size, occl_buffer, nullptr, nullptr);
+
+	for (uint32_t bounce = 0; bounce < MAX_BOUNCES; ++bounce) {
+		// Generate secondary shadow rays
+		shadow_rays_buffer = GenerateSecondaryShadowRays(occl_buffer_cl);
+
+		// Intersection again
+		g_api->QueryIntersection(shadow_rays_buffer, k_raypack_size, occl_buffer, nullptr, nullptr);
+	}
 
     // Shading
     tex_buf = Shading(isect_buffer_cl, occl_buffer_cl, light);
@@ -811,7 +839,7 @@ int main(int argc, char* argv[])
     ray_buffer_cl         = CLWBuffer<ray>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
     shadow_rays_buffer_cl = CLWBuffer<ray>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
     isect_buffer_cl       = CLWBuffer<Intersection>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
-    occl_buffer_cl        = CLWBuffer<int>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
+    occl_buffer_cl        = CLWBuffer<Intersection>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
     tex_buffer_cl         = CLWBuffer<unsigned char>::Create(g_context, CL_MEM_READ_ONLY, 4 * k_raypack_size);
 
     // Create the intersection and occlusion buffers
