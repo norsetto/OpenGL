@@ -581,11 +581,11 @@ void DrawScene(float time)
 
                 break;
             case(GLFW_MOUSE_BUTTON_MIDDLE):
-                light.x += (float)(xpos - mouse.xpos) * 0.005f;
-                light.z += (float)(ypos - mouse.ypos) * 0.005f;
+                light += (float)(xpos - mouse.xpos) * 0.005f * cam.right +
+						 (float)(ypos - mouse.ypos) * 0.005f * cam.forward;
                 break;
 			case(GLFW_MOUSE_BUTTON_RIGHT):
-				light.y += (float)(ypos - mouse.ypos) * 0.005f;
+				light -= (float)(ypos - mouse.ypos) * 0.005f * cam.up;
 				break;
 		}
         mouse.xpos = xpos;
