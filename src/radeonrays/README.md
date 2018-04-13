@@ -1,12 +1,11 @@
-## First jab at the RadeonRays SDK: mainly the CornellBoxShadow tutorial but dynamic (moving camera and light).
+## First jab at the RadeonRays SDK: mainly the CornellBoxShadow tutorial but dynamic (moving camera and light), with textures and refraction.
 
 ![Sibenik in all its raytracing glory](sibenik.png)
 
-## Things I'd like to add/correct:
-* Light transmittance is still not good for multiple transparent surfaces
+## Things I'd like to add:
 * Bump maps
-* Light refraction
-* Reflection
+* Light refraction (and reflection?)
+* Reflections (including Fresnel)
 * Depth of field
 * Soft shadows
 

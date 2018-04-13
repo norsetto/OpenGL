@@ -275,8 +275,9 @@ __kernel void GenerateSecondaryShadowRays(__global Ray* rays,
 
 			if (ior[ind / 3 + prim_id] != 1.0f) {
 
-				//Set new ray origin
+				//Set new ray origin and length
 				rays[k].o.xyz += (isect[k].uvwt.w + EPSILON) * rays[k].d.xyz;
+				rays[k].o.w -= isect[k].uvwt.w;
 			} else {
 
 				//Set ray to inactive

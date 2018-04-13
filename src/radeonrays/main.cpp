@@ -706,6 +706,7 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 			fprintf(stdout, "cam.up      = { %ff, %ff, %ff };\n", cam.up.x, cam.up.y, cam.up.z);
 			fprintf(stdout, "cam.pitch = %ff;\n", cam.pitch);
 			fprintf(stdout, "cam.yaw   = %ff;\n", cam.yaw);
+			fflush(stdout);
 			break;
 		case 'F':
 			g_fxaaOn = !g_fxaaOn;
