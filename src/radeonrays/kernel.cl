@@ -102,6 +102,7 @@ float2 ConvertFromBarycentric2(__global const float* vec,
 }
 
 __kernel void GeneratePerspectiveRays(__global Ray* rays,
+									  __global float3* blend_color,
                                     const float4 cam_pos,
                                     const float4 cam_forward,
                                     const float4 cam_right,
@@ -131,15 +132,21 @@ __kernel void GeneratePerspectiveRays(__global Ray* rays,
 
         rays[k].extra.x = 0xFFFFFFFF;
         rays[k].extra.y = 0xFFFFFFFF;
+
+		blend_color[k].x = 1.0f;
+		blend_color[k].y = 1.0f;
+		blend_color[k].z = 1.0f;
     }
 }
 
 __kernel void GenerateSecondaryRays(__global Ray* rays,
+									__global float3* blend_color,
 				//scene
 				__global float* normals,
 				__global int* ids,
                 __global int* indents,
                 __global float* ior,
+				__global float* diffuse,
                 //intersection
                 __global Intersection* isect,
                 int width,
@@ -164,6 +171,12 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 			float eta = 1.0f / ior[ind / 3 + prim_id];
 
 			if (eta != 1.0f) {
+
+				// compute blending color
+				int color_id = ind + prim_id*3;
+				blend_color[k].x *= diffuse[color_id + 0];
+				blend_color[k].y *= diffuse[color_id + 1];
+				blend_color[k].z *= diffuse[color_id + 2];
 
 				// compute normal at intersection point
 			    float4 norm = ConvertFromBarycentric3(normals + ind*3, ids + ind, prim_id, isect[k].uvwt);
@@ -203,6 +216,7 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 }
 
 __kernel void GenerateShadowRays(__global Ray* rays,
+								 __global float3* light_color,
                             //scene
                             __global float* positions,
                             __global float* normals,
@@ -246,13 +260,19 @@ __kernel void GenerateShadowRays(__global Ray* rays,
 
         rays[k].extra.x = 0xFFFFFFFF;
         rays[k].extra.y = 0xFFFFFFFF;
+
+		light_color[k].x = 1.0f;
+		light_color[k].y = 1.0f;
+		light_color[k].z = 1.0f;
    }
 }
 
 __kernel void GenerateSecondaryShadowRays(__global Ray* rays,
+										  __global float3* light_color,
 				//scene
                 __global int* indents,
                 __global float* ior,
+				__global float* diffuse,
                 //intersection
                 __global Intersection* isect,
                 int width,
@@ -278,6 +298,13 @@ __kernel void GenerateSecondaryShadowRays(__global Ray* rays,
 				//Set new ray origin and length
 				rays[k].o.xyz += (isect[k].uvwt.w + EPSILON) * rays[k].d.xyz;
 				rays[k].o.w -= isect[k].uvwt.w;
+
+				//Blend light color
+				int color_id = ind + prim_id*3;
+				light_color[k].x *= diffuse[color_id + 0];
+				light_color[k].y *= diffuse[color_id + 1];
+				light_color[k].z *= diffuse[color_id + 2];
+
 			} else {
 
 				//Set ray to inactive
@@ -287,7 +314,9 @@ __kernel void GenerateSecondaryShadowRays(__global Ray* rays,
     }
 }
 
-__kernel void Shading(//scene
+__kernel void Shading(__global float3* blend_color,
+					  __global float3* light_color,
+				//scene
                 __global float* positions,
                 __global float* normals,
 				__global float* texcoords,
@@ -316,7 +345,7 @@ __kernel void Shading(//scene
         int k = globalid.y * width + globalid.x;
         int shape_id = isect[k].shapeid;
         int prim_id = isect[k].primid;
-        float4 col = {0.7, 1.0, 1.0, 1.0}; //Background color
+        float3 col = {0.7, 1.0, 1.0}; //Background color
 
         if (shape_id != -1 && prim_id != -1)
         {
@@ -329,12 +358,12 @@ __kernel void Shading(//scene
 
 			//triangle diffuse color
 			int color_id = ind + prim_id*3;
-			float4 amb_col  = (float4)( ambient[color_id],
+			float3 amb_col  = (float3)( ambient[color_id],
 					                    ambient[color_id + 1],
-						                ambient[color_id + 2], 1.f);
-			float4 diff_col = (float4)( diffuse[color_id],
+						                ambient[color_id + 2]);
+			float3 diff_col = (float3)( diffuse[color_id],
 					                    diffuse[color_id + 1],
-						                diffuse[color_id + 2], 1.f);
+						                diffuse[color_id + 2]);
 
 			//triangle texture (if any)
 			int texture_id = ind / 3 + prim_id;
@@ -380,8 +409,8 @@ __kernel void Shading(//scene
 				sample4.y = (float)texdata[1 + 3 * (w * t1 + s1)] / 255.f;
 				sample4.z = (float)texdata[2 + 3 * (w * t1 + s1)] / 255.f;
 
-				diff_col.xyz = lerp(lerp(sample1, sample2, wx), lerp(sample3, sample4, wx), wy);
-				amb_col.xyz = 0.2f * diff_col.xyz;
+				diff_col = lerp(lerp(sample1, sample2, wx), lerp(sample3, sample4, wx), wy);
+				amb_col = 0.2f * diff_col;
 			}
 
 			// Calculate lighting
@@ -392,9 +421,12 @@ __kernel void Shading(//scene
                 float4 light_dir = normalize(light - pos);
                 float dot_prod = dot(norm, light_dir);
                 if (dot_prod > 0.f)
-                    col += dot_prod * diff_col;
+                    col += dot_prod * diff_col * light_color[k];
             }
         }
+
+		// Blend transparency color
+		col *= blend_color[k];
 
 		// Clamp to 0.0 - 1.0
 		if (col.x > 1.0f) col.x = 1.0f;
