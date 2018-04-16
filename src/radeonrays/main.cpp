@@ -94,6 +94,7 @@ namespace {
 	CLWBuffer<int> g_indices;
     CLWBuffer<float> g_ambient;
     CLWBuffer<float> g_diffuse;
+	CLWBuffer<float> g_specular;
 	CLWBuffer<float> g_ior;
 	CLWBuffer<int> g_indent;
 	CLWBuffer<Texture> g_textures;
@@ -224,6 +225,7 @@ void InitData(const char * filearg)
 	std::vector<int> inds = {};
 	std::vector<float> ambient = {};
 	std::vector<float> diffuse = {};
+	std::vector<float> specular = {};
 	std::vector<float> ior = {};
 	std::vector<int> indents = {};
 	std::vector<Texture> texture = {};
@@ -263,6 +265,10 @@ void InitData(const char * filearg)
             diffuse.push_back(mat.diffuse[1]);
             diffuse.push_back(mat.diffuse[2]);
 
+			specular.push_back(mat.specular[0]);
+			specular.push_back(mat.specular[1]);
+			specular.push_back(mat.specular[2]);
+
 			ior.push_back(mat.ior);
 
 			texture.push_back(textureDiffuseMaps[mat.diffuse_texname.data()]);
@@ -290,6 +296,7 @@ void InitData(const char * filearg)
 	g_indices = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, inds.size(), inds.data());
     g_ambient = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, ambient.size(), ambient.data());
     g_diffuse = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, diffuse.size(), diffuse.data());
+	g_specular = CLWBuffer<float>::Create(g_context, CL_MEM_READ_WRITE, specular.size(), specular.data());
 	g_ior = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, ior.size(), ior.data());
 	g_indent = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, indents.size(), indents.data());
 	g_textures = CLWBuffer<Texture>::Create(g_context, CL_MEM_READ_ONLY, texture.size(), texture.data());
@@ -385,9 +392,10 @@ Buffer* GenerateSecondaryRays(const CLWBuffer<Intersection> &isect)
 	kernel.SetArg(4, g_indent);
 	kernel.SetArg(5, g_ior);
 	kernel.SetArg(6, g_diffuse);
-	kernel.SetArg(7, isect);
-	kernel.SetArg(8, g_window_width);
-	kernel.SetArg(9, g_window_height);
+	kernel.SetArg(7, g_specular);
+	kernel.SetArg(8, isect);
+	kernel.SetArg(9, g_window_width);
+	kernel.SetArg(10, g_window_height);
 
 	// Run generation kernel
 	size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };

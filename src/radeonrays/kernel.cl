@@ -147,6 +147,7 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
                 __global int* indents,
                 __global float* ior,
 				__global float* diffuse,
+				__global float* specular,
                 //intersection
                 __global Intersection* isect,
                 int width,
@@ -172,12 +173,6 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 
 			if (eta != 1.0f) {
 
-				// compute blending color
-				int color_id = ind + prim_id*3;
-				blend_color[k].x *= diffuse[color_id + 0];
-				blend_color[k].y *= diffuse[color_id + 1];
-				blend_color[k].z *= diffuse[color_id + 2];
-
 				// compute normal at intersection point
 			    float4 norm = ConvertFromBarycentric3(normals + ind*3, ids + ind, prim_id, isect[k].uvwt);
 				norm = normalize(norm);
@@ -185,10 +180,35 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 				// compute cosine of angle between incident ray and local normal
 				float ndoti = -dot(norm.xyz, rays[k].d.xyz);
 
+				// specular reflection coefficient
+				float Reflection = 0.f;
+
 				// revert the ratio of refraction indices if we are exiting the surface
 				if (ndoti < 0.f) {
 					eta = 1.f / eta;
+				} else {
+					// compute specular reflection coefficient (approximate)
+					float R = (eta - 1.0f) * (eta - 1.0f) / ((eta + 1.0f) * (eta + 1.0f));
+					float K = 1.0f - ndoti;
+					float K2 = K * K;
+					Reflection = R + (1.0f - R) * K * K2 * K2;
 				}
+
+				float Refraction = 1.0f - Reflection;
+
+				// compute blending color
+				int color_id = ind + prim_id*3;
+				blend_color[k] *= Refraction;
+
+				// TODO: generalize to refracting surfaces which are also textured
+				blend_color[k].x *= diffuse[color_id + 0];
+				blend_color[k].y *= diffuse[color_id + 1];
+				blend_color[k].z *= diffuse[color_id + 2];
+
+				// compute specular color
+				specular[color_id + 0] = Reflection;
+				specular[color_id + 1] = Reflection;
+				specular[color_id + 2] = Reflection;
 
 				float kappa = 1.0f - eta * eta * (1.0f - ndoti * ndoti);
 
