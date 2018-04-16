@@ -3,9 +3,9 @@
 ![Sibenik in all its raytracing glory](sibenik.png)
 
 ## Things I'd like to add:
+* Reflections (WIP)
+* Light refraction and reflection
 * Bump maps
-* Light refraction (and reflection?)
-* Reflections (including Fresnel)
 * Depth of field
 * Soft shadows
 

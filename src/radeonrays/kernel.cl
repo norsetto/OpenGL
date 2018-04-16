@@ -351,6 +351,7 @@ __kernel void Shading(__global float3* blend_color,
                 __global const Intersection* occl,
                 //light pos
                 float4 light,
+				float exposure,
                 int width,
                 int height,
                 __global unsigned char* out)
@@ -448,10 +449,8 @@ __kernel void Shading(__global float3* blend_color,
 		// Blend transparency color
 		col *= blend_color[k];
 
-		// Clamp to 0.0 - 1.0
-		if (col.x > 1.0f) col.x = 1.0f;
-		if (col.y > 1.0f) col.y = 1.0f;
-		if (col.z > 1.0f) col.z = 1.0f;
+		// Tone Mapping
+		col = (float3)1.0f - exp(-col * exposure);
 
 		// Output
         out[k * 4] = col.x * 255;

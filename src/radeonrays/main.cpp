@@ -122,6 +122,7 @@ namespace {
 
     // Point light position
 	RadeonRays::float3 light = { -5.795126f, 0.277411f, 0.285406f };
+	float exposure = 1.5f;
 
     //Mouse struct for mouse handling
     struct MOUSE {
@@ -466,6 +467,8 @@ Buffer* Shading(const CLWBuffer<Intersection> &isect, const CLWBuffer<Intersecti
         light.z,
         light.w };
 
+	cl_float exposure_cl = exposure;
+
     //run kernel
     CLWKernel kernel = g_program.GetKernel("Shading");
 	kernel.SetArg(0, blend_color_buffer_cl);
@@ -482,9 +485,10 @@ Buffer* Shading(const CLWBuffer<Intersection> &isect, const CLWBuffer<Intersecti
 	kernel.SetArg(11, isect);
     kernel.SetArg(12, occluds);
     kernel.SetArg(13, light_cl);
-    kernel.SetArg(14, g_window_width);
-    kernel.SetArg(15, g_window_height);
-    kernel.SetArg(16, tex_buffer_cl);
+	kernel.SetArg(14, exposure_cl);
+	kernel.SetArg(15, g_window_width);
+    kernel.SetArg(16, g_window_height);
+    kernel.SetArg(17, tex_buffer_cl);
 
     // Run generation kernel
     size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };
@@ -753,7 +757,13 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 		case '8':
 			g_maxSpan += 1.0f;
 			break;
-        }
+		case GLFW_KEY_RIGHT_BRACKET:
+			exposure *= 1.05f;
+			break;
+		case GLFW_KEY_LEFT_BRACKET:
+			exposure /= 1.05f;
+			break;
+		}
     }
 }
 
