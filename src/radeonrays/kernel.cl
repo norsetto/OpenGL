@@ -103,6 +103,8 @@ float2 ConvertFromBarycentric2(__global const float* vec,
 
 __kernel void GeneratePerspectiveRays(__global Ray* rays,
 									  __global float3* blend_color,
+									  __global float3* specular_color,
+									  __global float3* color,
                                     const float4 cam_pos,
                                     const float4 cam_forward,
                                     const float4 cam_right,
@@ -136,11 +138,20 @@ __kernel void GeneratePerspectiveRays(__global Ray* rays,
 		blend_color[k].x = 1.0f;
 		blend_color[k].y = 1.0f;
 		blend_color[k].z = 1.0f;
+
+		specular_color[k].x = 1.0f;
+		specular_color[k].y = 1.0f;
+		specular_color[k].z = 1.0f;
+
+		color[k].x = 0.0f;
+		color[k].y = 0.0f;
+		color[k].z = 0.0f;
     }
 }
 
 __kernel void GenerateSecondaryRays(__global Ray* rays,
 									__global float3* blend_color,
+									__global float3* specular_color,
 				//scene
 				__global float* normals,
 				__global int* ids,
@@ -167,6 +178,7 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
         if (shape_id != -1 && prim_id != -1)
         {
             int ind = indents[shape_id];
+			int color_id = ind + prim_id*3;
 
 			// compute ratio of index of reflections (1.0f is vacuum~air)
 			float eta = 1.0f / ior[ind / 3 + prim_id];
@@ -188,7 +200,8 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 					eta = 1.f / eta;
 				} else {
 					// compute specular reflection coefficient (approximate)
-					float R = (eta - 1.0f) * (eta - 1.0f) / ((eta + 1.0f) * (eta + 1.0f));
+					float R = (eta - 1.0f) / (eta + 1.0f);
+					R *= R;
 					float K = 1.0f - ndoti;
 					float K2 = K * K;
 					Reflection = R + (1.0f - R) * K * K2 * K2;
@@ -197,13 +210,7 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 				float Refraction = 1.0f - Reflection;
 
 				// compute blending color
-				int color_id = ind + prim_id*3;
 				blend_color[k] *= Refraction;
-
-				// TODO: generalize to refracting surfaces which are also textured
-				blend_color[k].x *= diffuse[color_id + 0];
-				blend_color[k].y *= diffuse[color_id + 1];
-				blend_color[k].z *= diffuse[color_id + 2];
 
 				// compute specular color
 				specular[color_id + 0] = Reflection;
@@ -226,6 +233,34 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 					//Set new ray origin
 					rays[k].o.xyz += (isect[k].uvwt.w + EPSILON) * rays[k].d.xyz;
 				}
+
+			} else if (specular[color_id + 0] > 0.0f ||
+					   specular[color_id + 1] > 0.0f ||
+					   specular[color_id + 2] > 0.0f)
+			{
+				// compute normal at intersection point
+			    float4 norm = ConvertFromBarycentric3(normals + ind*3, ids + ind, prim_id, isect[k].uvwt);
+				norm = normalize(norm);
+
+				// compute cosine of angle between incident ray and local normal
+				float ndoti = dot(norm.xyz, rays[k].d.xyz);
+
+				// propagate specular colors
+				specular_color[k].x *= specular[color_id + 0];
+				specular_color[k].y *= specular[color_id + 1];
+				specular_color[k].z *= specular[color_id + 2];
+
+				// compute reflected ray
+				float3 reflect = rays[k].d.xyz - 2.0f * ndoti * norm.xyz;
+
+				//Set new ray origin
+				rays[k].o.xyz += isect[k].uvwt.w * rays[k].d.xyz;
+
+				//Set new ray direction
+				rays[k].d.xyz = normalize(reflect);
+
+				//Offset new ray origin
+				rays[k].o.xyz += EPSILON * rays[k].d.xyz;
 
 			} else {
 				//Set ray to inactive
@@ -336,6 +371,7 @@ __kernel void GenerateSecondaryShadowRays(__global Ray* rays,
 
 __kernel void Shading(__global float3* blend_color,
 					  __global float3* light_color,
+					  __global float3* specular_color,
 				//scene
                 __global float* positions,
                 __global float* normals,
@@ -351,10 +387,9 @@ __kernel void Shading(__global float3* blend_color,
                 __global const Intersection* occl,
                 //light pos
                 float4 light,
-				float exposure,
                 int width,
                 int height,
-                __global unsigned char* out)
+                __global float3* color)
 {
     int2 globalid;
     globalid.x  = get_global_id(0);
@@ -449,15 +484,40 @@ __kernel void Shading(__global float3* blend_color,
 		// Blend transparency color
 		col *= blend_color[k];
 
+		// Blend specular color
+		col *= specular_color[k];
+
+		// Add color
+		color[k] += col;
+    }
+}
+
+__kernel void ToneMapping(__global float3* color,
+				float exposure,
+				float bounces,
+                int width,
+                int height,
+                __global unsigned char* out)
+{
+    int2 globalid;
+    globalid.x  = get_global_id(0);
+    globalid.y  = get_global_id(1);
+
+    // Check borders
+    if (globalid.x < width && globalid.y < height)
+    {
+        int k = globalid.y * width + globalid.x;
+
 		// Tone Mapping
-		col = (float3)1.0f - exp(-col * exposure);
+		color[k] /= bounces;
+		color[k] = (float3)1.0f - exp(-color[k] * exposure);
 
 		// Output
-        out[k * 4] = col.x * 255;
-        out[k * 4 + 1] = col.y * 255;
-        out[k * 4 + 2] = col.z * 255;
+        out[k * 4] = color[k].x * 255;
+        out[k * 4 + 1] = color[k].y * 255;
+        out[k * 4 + 2] = color[k].z * 255;
         out[k * 4 + 3] = 255;
-    }
+	}
 }
 
 #endif //KERNEL_CL
