@@ -1,13 +1,13 @@
-## First jab at the RadeonRays SDK: mainly the CornellBoxShadow tutorial but dynamic (moving camera and light), with textures and refraction.
+## First jab at the RadeonRays SDK: mainly the CornellBoxShadow tutorial but dynamic (moving camera and light), with textures, reflections and refractions.
 
 ![Sibenik in all its raytracing glory](sibenik.png)
 
 ## Things I'd like to add:
-* Reflections (WIP)
+* Fresnel
 * Light refraction and reflection
-* Bump maps
-* Depth of field
 * Soft shadows
+* Depth of field
+* Bump maps
 
 ## Sibenik by Marko Dabrovic
 

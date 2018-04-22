@@ -44,7 +44,7 @@ THE SOFTWARE.
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#define MAX_BOUNCES 5
+#define MAX_BOUNCES 4
 
 using namespace RadeonRays;
 using namespace tinyobj;
@@ -153,10 +153,9 @@ namespace {
     //OpenCL buffers
     CLWBuffer<ray> ray_buffer_cl;
     CLWBuffer<ray> shadow_rays_buffer_cl;
-	CLWBuffer<RadeonRays::float3> blend_color_buffer_cl;
-	CLWBuffer<RadeonRays::float3> specular_color_buffer_cl;
-	CLWBuffer<RadeonRays::float3> light_color_buffer_cl;
 	CLWBuffer<RadeonRays::float3> color_buffer_cl;
+	CLWBuffer<RadeonRays::float3> light_color_buffer_cl;
+	CLWBuffer<RadeonRays::float3> blend_color_buffer_cl;
 	CLWBuffer<Intersection> isect_buffer_cl;
     CLWBuffer<Intersection> occl_buffer_cl;
     CLWBuffer<unsigned char> tex_buffer_cl;
@@ -299,7 +298,7 @@ void InitData(const char * filearg)
 	g_indices = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, inds.size(), inds.data());
     g_ambient = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, ambient.size(), ambient.data());
     g_diffuse = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, diffuse.size(), diffuse.data());
-	g_specular = CLWBuffer<float>::Create(g_context, CL_MEM_READ_WRITE, specular.size(), specular.data());
+	g_specular = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, specular.size(), specular.data());
 	g_ior = CLWBuffer<float>::Create(g_context, CL_MEM_READ_ONLY, ior.size(), ior.data());
 	g_indent = CLWBuffer<int>::Create(g_context, CL_MEM_READ_ONLY, indents.size(), indents.data());
 	g_textures = CLWBuffer<Texture>::Create(g_context, CL_MEM_READ_ONLY, texture.size(), texture.data());
@@ -366,9 +365,9 @@ Buffer* GeneratePrimaryRays()
     //run kernel
     CLWKernel kernel = g_program.GetKernel("GeneratePerspectiveRays");
     kernel.SetArg(0, ray_buffer_cl);
-	kernel.SetArg(1, blend_color_buffer_cl);
-	kernel.SetArg(2, specular_color_buffer_cl);
-	kernel.SetArg(3, color_buffer_cl);
+	kernel.SetArg(1, color_buffer_cl);
+	kernel.SetArg(2, light_color_buffer_cl);
+	kernel.SetArg(3, blend_color_buffer_cl);
 	kernel.SetArg(4, cam_pos_cl);
     kernel.SetArg(5, cam_forward_cl);
     kernel.SetArg(6, cam_right_cl);
@@ -391,17 +390,15 @@ Buffer* GenerateSecondaryRays(const CLWBuffer<Intersection> &isect)
 	//run kernel
 	CLWKernel kernel = g_program.GetKernel("GenerateSecondaryRays");
 	kernel.SetArg(0, ray_buffer_cl);
-	kernel.SetArg(1, blend_color_buffer_cl);
-	kernel.SetArg(2, specular_color_buffer_cl);
-	kernel.SetArg(3, g_normals);
-	kernel.SetArg(4, g_indices);
-	kernel.SetArg(5, g_indent);
-	kernel.SetArg(6, g_ior);
-	kernel.SetArg(7, g_diffuse);
-	kernel.SetArg(8, g_specular);
-	kernel.SetArg(9, isect);
-	kernel.SetArg(10, g_window_width);
-	kernel.SetArg(11, g_window_height);
+	kernel.SetArg(1, g_normals);
+	kernel.SetArg(2, g_indices);
+	kernel.SetArg(3, g_indent);
+	kernel.SetArg(4, g_ior);
+	kernel.SetArg(5, g_diffuse);
+	kernel.SetArg(6, g_specular);
+	kernel.SetArg(7, isect);
+	kernel.SetArg(8, g_window_width);
+	kernel.SetArg(9, g_window_height);
 
 	// Run generation kernel
 	size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };
@@ -423,15 +420,14 @@ Buffer* GenerateShadowRays(CLWBuffer<Intersection> & isect, const RadeonRays::fl
     //run kernel
     CLWKernel kernel = g_program.GetKernel("GenerateShadowRays");
     kernel.SetArg(0, shadow_rays_buffer_cl);
-	kernel.SetArg(1, light_color_buffer_cl);
-	kernel.SetArg(2, g_positions);
-    kernel.SetArg(3, g_normals);
-    kernel.SetArg(4, g_indices);
-    kernel.SetArg(5, g_indent);
-    kernel.SetArg(6, isect);
-    kernel.SetArg(7, light_cl);
-    kernel.SetArg(8, g_window_width);
-    kernel.SetArg(9, g_window_height);
+	kernel.SetArg(1, g_positions);
+    kernel.SetArg(2, g_normals);
+    kernel.SetArg(3, g_indices);
+    kernel.SetArg(4, g_indent);
+    kernel.SetArg(5, isect);
+    kernel.SetArg(6, light_cl);
+    kernel.SetArg(7, g_window_width);
+    kernel.SetArg(8, g_window_height);
 
     // Run generation kernel
     size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };
@@ -474,24 +470,27 @@ void Shading(const CLWBuffer<Intersection> &isect, const CLWBuffer<Intersection>
 
     //run kernel
     CLWKernel kernel = g_program.GetKernel("Shading");
-	kernel.SetArg(0, blend_color_buffer_cl);
-	kernel.SetArg(1, light_color_buffer_cl);
-	kernel.SetArg(2, specular_color_buffer_cl);
-	kernel.SetArg(3, g_positions);
-    kernel.SetArg(4, g_normals);
-	kernel.SetArg(5, g_texcoords);
-	kernel.SetArg(6, g_indices);
-    kernel.SetArg(7, g_ambient);
-    kernel.SetArg(8, g_diffuse);
-	kernel.SetArg(9, g_texturePool);
-    kernel.SetArg(10, g_indent);
-	kernel.SetArg(11, g_textures);
-	kernel.SetArg(12, isect);
-    kernel.SetArg(13, occluds);
-    kernel.SetArg(14, light_cl);
-	kernel.SetArg(15, g_window_width);
-    kernel.SetArg(16, g_window_height);
-    kernel.SetArg(17, color_buffer_cl);
+	kernel.SetArg(0, ray_buffer_cl);
+	kernel.SetArg(1, shadow_rays_buffer_cl);
+	kernel.SetArg(2, light_color_buffer_cl);
+	kernel.SetArg(3, blend_color_buffer_cl);
+	kernel.SetArg(4, g_positions);
+    kernel.SetArg(5, g_normals);
+	kernel.SetArg(6, g_texcoords);
+	kernel.SetArg(7, g_indices);
+    kernel.SetArg(8, g_ambient);
+    kernel.SetArg(9, g_diffuse);
+	kernel.SetArg(10, g_specular);
+	kernel.SetArg(11, g_ior);
+	kernel.SetArg(12, g_texturePool);
+    kernel.SetArg(13, g_indent);
+	kernel.SetArg(14, g_textures);
+	kernel.SetArg(15, isect);
+    kernel.SetArg(16, occluds);
+    kernel.SetArg(17, light_cl);
+	kernel.SetArg(18, g_window_width);
+    kernel.SetArg(19, g_window_height);
+    kernel.SetArg(20, color_buffer_cl);
 
     // Run generation kernel
     size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };
@@ -505,16 +504,13 @@ Buffer* ToneMapping(float exposure)
 	//pass data to buffers
 	cl_float exposure_cl = exposure;
 
-	cl_float bounces_cl = MAX_BOUNCES;
-
 	//run kernel
 	CLWKernel kernel = g_program.GetKernel("ToneMapping");
 	kernel.SetArg(0, color_buffer_cl);
 	kernel.SetArg(1, exposure_cl);
-	kernel.SetArg(2, bounces_cl);
-	kernel.SetArg(3, g_window_width);
-	kernel.SetArg(4, g_window_height);
-	kernel.SetArg(5, tex_buffer_cl);
+	kernel.SetArg(2, g_window_width);
+	kernel.SetArg(3, g_window_height);
+	kernel.SetArg(4, tex_buffer_cl);
 
 	// Run generation kernel
 	size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };
@@ -651,6 +647,16 @@ void DrawScene(float time)
 	// Intersection
 	g_api->QueryIntersection(shadow_rays_buffer, k_raypack_size, occl_buffer, nullptr, nullptr);
 
+	for (uint32_t bounce = 0; bounce < MAX_BOUNCES; ++bounce) {
+
+		// Generate secondary shadow rays
+		shadow_rays_buffer = GenerateSecondaryShadowRays(occl_buffer_cl);
+
+		// Intersection again
+		g_api->QueryIntersection(shadow_rays_buffer, k_raypack_size, occl_buffer, nullptr, nullptr);
+
+	}
+
 	// Shading
 	Shading(isect_buffer_cl, occl_buffer_cl, light);
 
@@ -660,12 +666,6 @@ void DrawScene(float time)
 
 		// Intersection again
 		g_api->QueryIntersection(ray_buffer, k_raypack_size, isect_buffer, nullptr, nullptr);
-
-		// Generate secondary shadow rays
-		shadow_rays_buffer = GenerateSecondaryShadowRays(occl_buffer_cl);
-
-		// Intersection again
-		g_api->QueryIntersection(shadow_rays_buffer, k_raypack_size, occl_buffer, nullptr, nullptr);
 
 		// Shading
 		Shading(isect_buffer_cl, occl_buffer_cl, light);
@@ -894,10 +894,9 @@ int main(int argc, char* argv[])
     // Create OpenCL buffers
     ray_buffer_cl            = CLWBuffer<ray>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
     shadow_rays_buffer_cl    = CLWBuffer<ray>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
-	blend_color_buffer_cl    = CLWBuffer<RadeonRays::float3>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
-	specular_color_buffer_cl = CLWBuffer<RadeonRays::float3>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
-	light_color_buffer_cl    = CLWBuffer<RadeonRays::float3>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
 	color_buffer_cl          = CLWBuffer<RadeonRays::float3>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
+	light_color_buffer_cl    = CLWBuffer<RadeonRays::float3>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
+	blend_color_buffer_cl    = CLWBuffer<RadeonRays::float3>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
 	isect_buffer_cl          = CLWBuffer<Intersection>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
     occl_buffer_cl           = CLWBuffer<Intersection>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
     tex_buffer_cl            = CLWBuffer<unsigned char>::Create(g_context, CL_MEM_READ_ONLY, 4 * k_raypack_size);

@@ -102,16 +102,17 @@ float2 ConvertFromBarycentric2(__global const float* vec,
 }
 
 __kernel void GeneratePerspectiveRays(__global Ray* rays,
-									  __global float3* blend_color,
-									  __global float3* specular_color,
-									  __global float3* color,
-                                    const float4 cam_pos,
-                                    const float4 cam_forward,
-                                    const float4 cam_right,
-                                    const float4 cam_up,
-                                    const float4 cam_zcap,
-                                    int width,
-                                    int height)
+					//colors
+					__global float3* color,
+					__global float3* light_col,
+					__global float3* blend_col,
+					const float4 cam_pos,
+                    const float4 cam_forward,
+                    const float4 cam_right,
+                    const float4 cam_up,
+                    const float4 cam_zcap,
+                    int width,
+                    int height)
 {
     int2 globalid;
     globalid.x  = get_global_id(0);
@@ -135,23 +136,21 @@ __kernel void GeneratePerspectiveRays(__global Ray* rays,
         rays[k].extra.x = 0xFFFFFFFF;
         rays[k].extra.y = 0xFFFFFFFF;
 
-		blend_color[k].x = 1.0f;
-		blend_color[k].y = 1.0f;
-		blend_color[k].z = 1.0f;
-
-		specular_color[k].x = 1.0f;
-		specular_color[k].y = 1.0f;
-		specular_color[k].z = 1.0f;
-
 		color[k].x = 0.0f;
 		color[k].y = 0.0f;
 		color[k].z = 0.0f;
+
+		blend_col[k].x = 1.0f;
+		blend_col[k].y = 1.0f;
+		blend_col[k].z = 1.0f;
+
+		light_col[k].x = 1.0f;
+		light_col[k].y = 1.0f;
+		light_col[k].z = 1.0f;
     }
 }
 
 __kernel void GenerateSecondaryRays(__global Ray* rays,
-									__global float3* blend_color,
-									__global float3* specular_color,
 				//scene
 				__global float* normals,
 				__global int* ids,
@@ -192,30 +191,10 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 				// compute cosine of angle between incident ray and local normal
 				float ndoti = -dot(norm.xyz, rays[k].d.xyz);
 
-				// specular reflection coefficient
-				float Reflection = 0.f;
-
 				// revert the ratio of refraction indices if we are exiting the surface
 				if (ndoti < 0.f) {
 					eta = 1.f / eta;
-				} else {
-					// compute specular reflection coefficient (approximate)
-					float R = (eta - 1.0f) / (eta + 1.0f);
-					R *= R;
-					float K = 1.0f - ndoti;
-					float K2 = K * K;
-					Reflection = R + (1.0f - R) * K * K2 * K2;
 				}
-
-				float Refraction = 1.0f - Reflection;
-
-				// compute blending color
-				blend_color[k] *= Refraction;
-
-				// compute specular color
-				specular[color_id + 0] = Reflection;
-				specular[color_id + 1] = Reflection;
-				specular[color_id + 2] = Reflection;
 
 				float kappa = 1.0f - eta * eta * (1.0f - ndoti * ndoti);
 
@@ -245,11 +224,6 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 				// compute cosine of angle between incident ray and local normal
 				float ndoti = dot(norm.xyz, rays[k].d.xyz);
 
-				// propagate specular colors
-				specular_color[k].x *= specular[color_id + 0];
-				specular_color[k].y *= specular[color_id + 1];
-				specular_color[k].z *= specular[color_id + 2];
-
 				// compute reflected ray
 				float3 reflect = rays[k].d.xyz - 2.0f * ndoti * norm.xyz;
 
@@ -271,7 +245,6 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 }
 
 __kernel void GenerateShadowRays(__global Ray* rays,
-								 __global float3* light_color,
                             //scene
                             __global float* positions,
                             __global float* normals,
@@ -315,15 +288,11 @@ __kernel void GenerateShadowRays(__global Ray* rays,
 
         rays[k].extra.x = 0xFFFFFFFF;
         rays[k].extra.y = 0xFFFFFFFF;
-
-		light_color[k].x = 1.0f;
-		light_color[k].y = 1.0f;
-		light_color[k].z = 1.0f;
    }
 }
 
 __kernel void GenerateSecondaryShadowRays(__global Ray* rays,
-										  __global float3* light_color,
+				__global float3* light_col,
 				//scene
                 __global int* indents,
                 __global float* ior,
@@ -355,10 +324,10 @@ __kernel void GenerateSecondaryShadowRays(__global Ray* rays,
 				rays[k].o.w -= isect[k].uvwt.w;
 
 				//Blend light color
-				int color_id = ind + prim_id*3;
-				light_color[k].x *= diffuse[color_id + 0];
-				light_color[k].y *= diffuse[color_id + 1];
-				light_color[k].z *= diffuse[color_id + 2];
+				int color_id = ind + prim_id * 3;
+				light_col[k].x *= diffuse[color_id + 0];
+				light_col[k].y *= diffuse[color_id + 1];
+				light_col[k].z *= diffuse[color_id + 2];
 
 			} else {
 
@@ -369,132 +338,158 @@ __kernel void GenerateSecondaryShadowRays(__global Ray* rays,
     }
 }
 
-__kernel void Shading(__global float3* blend_color,
-					  __global float3* light_color,
-					  __global float3* specular_color,
-				//scene
-                __global float* positions,
-                __global float* normals,
-				__global float* texcoords,
-                __global int* ids,
-                __global float* ambient,
-                __global float* diffuse,
-				__global unsigned char* texturePool,
-                __global int* indents,
-				__global Texture* textures,
-                //intersection
-                __global Intersection* isect,
-                __global const Intersection* occl,
-                //light pos
-                float4 light,
-                int width,
-                int height,
-                __global float3* color)
+__kernel void Shading(__global Ray* rays,
+					  __global Ray* shadow_rays,
+	//colors
+	__global float3* light_col,
+	__global float3* blend_col,
+	//scene
+	__global float* positions,
+	__global float* normals,
+	__global float* texcoords,
+	__global int* ids,
+	__global float* ambient,
+	__global float* diffuse,
+	__global float* specular,
+	__global float* ior,
+	__global unsigned char* texturePool,
+	__global int* indents,
+	__global Texture* textures,
+	//intersection
+	__global Intersection* isect,
+	__global const Intersection* occl,
+	//light pos
+	float4 light,
+	int width,
+	int height,
+	__global float3* color)
 {
-    int2 globalid;
-    globalid.x  = get_global_id(0);
-    globalid.y  = get_global_id(1);
+	int2 globalid;
+	globalid.x = get_global_id(0);
+	globalid.y = get_global_id(1);
 
-    // Check borders
-    if (globalid.x < width && globalid.y < height)
-    {
-        int k = globalid.y * width + globalid.x;
-        int shape_id = isect[k].shapeid;
-        int prim_id = isect[k].primid;
-        float3 col = {0.7, 1.0, 1.0}; //Background color
+	// Check borders
+	if (globalid.x < width && globalid.y < height)
+	{
+		int k = globalid.y * width + globalid.x;
 
-        if (shape_id != -1 && prim_id != -1)
-        {
-            // Calculate position and normal of the intersection point
-            int ind = indents[shape_id];
+		if (rays[k].extra.y != 0x00000000) {
 
-            float4 pos = ConvertFromBarycentric3(positions + ind*3, ids + ind, prim_id, isect[k].uvwt);
-            float4 norm = ConvertFromBarycentric3(normals + ind*3, ids + ind, prim_id, isect[k].uvwt);
-            norm = normalize(norm);
+			int shape_id = isect[k].shapeid;
+			int prim_id = isect[k].primid;
+			float3 col = { 0.7, 1.0, 1.0 }; //Background color
+			float3 diff_col = (float3)(1.0f, 1.0f, 1.0f); //Diffuse color
+			float3 spec_col = (float3)(1.0f, 1.0f, 1.0f); //Specular color
 
-			//triangle diffuse color
-			int color_id = ind + prim_id*3;
-			float3 amb_col  = (float3)( ambient[color_id],
-					                    ambient[color_id + 1],
-						                ambient[color_id + 2]);
-			float3 diff_col = (float3)( diffuse[color_id],
-					                    diffuse[color_id + 1],
-						                diffuse[color_id + 2]);
+			if (shape_id != -1 && prim_id != -1)
+			{
+				// Calculate position and normal of the intersection point
+				int ind = indents[shape_id];
 
-			//triangle texture (if any)
-			int texture_id = ind / 3 + prim_id;
-			unsigned int w = textures[texture_id].w;
-			unsigned int h = textures[texture_id].h;
+				float4 pos = ConvertFromBarycentric3(positions + ind * 3, ids + ind, prim_id, isect[k].uvwt);
+				float4 norm = ConvertFromBarycentric3(normals + ind * 3, ids + ind, prim_id, isect[k].uvwt);
+				norm = normalize(norm);
 
-			if (w > 0 && h > 0) {
+				//triangle colors
+				int color_id = ind + prim_id * 3;
+				float3 amb_col = (float3)(ambient[color_id + 0],
+										  ambient[color_id + 1],
+										  ambient[color_id + 2]);
+				diff_col = (float3)(diffuse[color_id + 0],
+									diffuse[color_id + 1],
+									diffuse[color_id + 2]);
+				spec_col = (float3)(specular[color_id + 0],
+									specular[color_id + 1],
+									specular[color_id + 2]);
 
-				//compute pixel texture coordinates (nearest filtering)
-				float2 uv = ConvertFromBarycentric2(texcoords + ind*2, ids + ind, prim_id, isect[k].uvwt);
-				uv -= floor(uv);
-				unsigned int s0 = clamp((unsigned int)floor(uv.x * (float)w), 0u, w - 1u);
-				unsigned int t0 = clamp((unsigned int)floor(uv.y * (float)h), 0u, h - 1u);
+				//triangle texture (if any)
+				int texture_id = ind / 3 + prim_id;
+				unsigned int w = textures[texture_id].w;
+				unsigned int h = textures[texture_id].h;
 
-				// Calculate additional samples for linear filtering
-				unsigned int s1 = min(s0 + 1u, w - 1u);
-				unsigned int t1 = min(t0 + 1u, h - 1u);
+				if (w > 0 && h > 0) {
 
-				// Calculate weights for linear filtering
-				float wx = uv.x * (float)w - floor(uv.x * (float)w);
-				float wy = uv.y * (float)h - floor(uv.y * (float)h);
+					//compute pixel texture coordinates (nearest filtering)
+					float2 uv = ConvertFromBarycentric2(texcoords + ind * 2, ids + ind, prim_id, isect[k].uvwt);
+					uv -= floor(uv);
+					unsigned int s0 = clamp((unsigned int)floor(uv.x * (float)w), 0u, w - 1u);
+					unsigned int t0 = clamp((unsigned int)floor(uv.y * (float)h), 0u, h - 1u);
 
-				//fetch texels
-				__global uchar const* texdata = texturePool + textures[texture_id].offset;
+					// Calculate additional samples for linear filtering
+					unsigned int s1 = min(s0 + 1u, w - 1u);
+					unsigned int t1 = min(t0 + 1u, h - 1u);
 
-				float3 sample1;
-				sample1.x = (float)texdata[0 + 3 * (w * t0 + s0)] / 255.f;
-				sample1.y = (float)texdata[1 + 3 * (w * t0 + s0)] / 255.f;
-				sample1.z = (float)texdata[2 + 3 * (w * t0 + s0)] / 255.f;
+					// Calculate weights for linear filtering
+					float wx = uv.x * (float)w - floor(uv.x * (float)w);
+					float wy = uv.y * (float)h - floor(uv.y * (float)h);
 
-				float3 sample2;
-				sample2.x = (float)texdata[0 + 3 * (w * t0 + s1)] / 255.f;
-				sample2.y = (float)texdata[1 + 3 * (w * t0 + s1)] / 255.f;
-				sample2.z = (float)texdata[2 + 3 * (w * t0 + s1)] / 255.f;
+					//fetch texels
+					__global uchar const* texdata = texturePool + textures[texture_id].offset;
 
-				float3 sample3;
-				sample3.x = (float)texdata[0 + 3 * (w * t1 + s0)] / 255.f;
-				sample3.y = (float)texdata[1 + 3 * (w * t1 + s0)] / 255.f;
-				sample3.z = (float)texdata[2 + 3 * (w * t1 + s0)] / 255.f;
+					float3 sample1;
+					sample1.x = (float)texdata[0 + 3 * (w * t0 + s0)] / 255.f;
+					sample1.y = (float)texdata[1 + 3 * (w * t0 + s0)] / 255.f;
+					sample1.z = (float)texdata[2 + 3 * (w * t0 + s0)] / 255.f;
 
-				float3 sample4;
-				sample4.x = (float)texdata[0 + 3 * (w * t1 + s1)] / 255.f;
-				sample4.y = (float)texdata[1 + 3 * (w * t1 + s1)] / 255.f;
-				sample4.z = (float)texdata[2 + 3 * (w * t1 + s1)] / 255.f;
+					float3 sample2;
+					sample2.x = (float)texdata[0 + 3 * (w * t0 + s1)] / 255.f;
+					sample2.y = (float)texdata[1 + 3 * (w * t0 + s1)] / 255.f;
+					sample2.z = (float)texdata[2 + 3 * (w * t0 + s1)] / 255.f;
 
-				diff_col = lerp(lerp(sample1, sample2, wx), lerp(sample3, sample4, wx), wy);
-				amb_col = 0.2f * diff_col;
+					float3 sample3;
+					sample3.x = (float)texdata[0 + 3 * (w * t1 + s0)] / 255.f;
+					sample3.y = (float)texdata[1 + 3 * (w * t1 + s0)] / 255.f;
+					sample3.z = (float)texdata[2 + 3 * (w * t1 + s0)] / 255.f;
+
+					float3 sample4;
+					sample4.x = (float)texdata[0 + 3 * (w * t1 + s1)] / 255.f;
+					sample4.y = (float)texdata[1 + 3 * (w * t1 + s1)] / 255.f;
+					sample4.z = (float)texdata[2 + 3 * (w * t1 + s1)] / 255.f;
+
+					diff_col = lerp(lerp(sample1, sample2, wx), lerp(sample3, sample4, wx), wy);
+					amb_col = 0.2f * diff_col;
+				}
+
+				// Calculate lighting
+				col = amb_col;
+
+				if (occl[k].shapeid == -1 && occl[k].primid == -1)
+				{
+					float4 light_dir = normalize(light - pos);
+					float dot_prod = dot(norm, light_dir);
+					if (dot_prod > 0.f) {
+						col += dot_prod * diff_col * light_col[k];
+					}
+				}
+			}
+			else {
+				//Set ray to inactive
+				rays[k].extra.y = 0x00000000;
 			}
 
-			// Calculate lighting
-            col = amb_col;
+			// Add color
+			col *= blend_col[k];
+			color[k] += col;
 
-            if (occl[k].shapeid == -1 && occl[k].primid == -1)
-            {
-                float4 light_dir = normalize(light - pos);
-                float dot_prod = dot(norm, light_dir);
-                if (dot_prod > 0.f)
-                    col += dot_prod * diff_col * light_color[k];
-            }
-        }
-
-		// Blend transparency color
-		col *= blend_color[k];
-
-		// Blend specular color
-		col *= specular_color[k];
-
-		// Add color
-		color[k] += col;
-    }
+			// Blend color
+			if (shape_id != -1 && prim_id != -1)
+			{
+				int ind = indents[shape_id];
+				if (ior[ind / 3 + prim_id] != 1.0f)
+					blend_col[k] *= diff_col;
+				if (spec_col.x > 0.0f)
+					blend_col[k].x *= spec_col.x;
+				if (spec_col.y > 0.0f)
+					blend_col[k].y *= spec_col.y;
+				if (spec_col.z > 0.0f)
+					blend_col[k].z *= spec_col.z;
+			}
+		}
+	}
 }
 
 __kernel void ToneMapping(__global float3* color,
 				float exposure,
-				float bounces,
                 int width,
                 int height,
                 __global unsigned char* out)
@@ -509,7 +504,6 @@ __kernel void ToneMapping(__global float3* color,
         int k = globalid.y * width + globalid.x;
 
 		// Tone Mapping
-		color[k] /= bounces;
 		color[k] = (float3)1.0f - exp(-color[k] * exposure);
 
 		// Output
