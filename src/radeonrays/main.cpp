@@ -142,6 +142,7 @@ namespace {
     int g_window_width = 800;
     int g_window_height = 600;
     int k_raypack_size = g_window_height * g_window_width;
+	int numrays = 0;
 
     //RadeonRays buffers
     Buffer* ray_buffer;
@@ -159,6 +160,7 @@ namespace {
 	CLWBuffer<Intersection> isect_buffer_cl;
     CLWBuffer<Intersection> occl_buffer_cl;
     CLWBuffer<unsigned char> tex_buffer_cl;
+	CLWBuffer<int> numrays_cl;
 
     //OpenGL buffers
     GLuint g_vao;
@@ -375,6 +377,7 @@ Buffer* GeneratePrimaryRays()
     kernel.SetArg(8, cam_zcap_cl);
     kernel.SetArg(9, g_window_width);
     kernel.SetArg(10, g_window_height);
+	kernel.SetArg(11, numrays_cl);
 
     // Run generation kernel
     size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };
@@ -399,6 +402,7 @@ Buffer* GenerateSecondaryRays(const CLWBuffer<Intersection> &isect)
 	kernel.SetArg(7, isect);
 	kernel.SetArg(8, g_window_width);
 	kernel.SetArg(9, g_window_height);
+	kernel.SetArg(10, numrays_cl);
 
 	// Run generation kernel
 	size_t gs[] = { static_cast<size_t>((g_window_width + 7) / 8 * 8), static_cast<size_t>((g_window_height + 7) / 8 * 8) };
@@ -715,10 +719,14 @@ void DrawScene(float time)
     frame++;
 
     if (total_time >= TIME_INTERVAL) {
+		g_context.ReadBuffer(0, numrays_cl, &numrays, 1).Wait();
         std::stringstream stream;
-        stream << WINDOW_TITLE << " - " << std::fixed << std::setprecision(0) << (float)frame / total_time << " fps";
+        stream << WINDOW_TITLE << " - " << std::fixed << std::setprecision(0) << (float)frame / total_time << " fps ";
+		stream << std::setprecision(3) << (float)numrays / (1.0e9f * total_time) << " Grays/s";
         glfwSetWindowTitle(window, stream.str().c_str());
         frame = 0;
+		numrays = 0;
+		g_context.WriteBuffer(0, numrays_cl, &numrays, 1);
         total_time = 0.0f;
     }
 }
@@ -900,6 +908,7 @@ int main(int argc, char* argv[])
 	isect_buffer_cl          = CLWBuffer<Intersection>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
     occl_buffer_cl           = CLWBuffer<Intersection>::Create(g_context, CL_MEM_READ_WRITE, k_raypack_size);
     tex_buffer_cl            = CLWBuffer<unsigned char>::Create(g_context, CL_MEM_READ_ONLY, 4 * k_raypack_size);
+	numrays_cl               = CLWBuffer<int>::Create(g_context, CL_MEM_READ_WRITE, 1, &numrays);
 
     // Create the intersection and occlusion buffers
     isect_buffer = CreateFromOpenClBuffer(g_api, isect_buffer_cl);

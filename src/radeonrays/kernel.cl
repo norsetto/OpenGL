@@ -112,7 +112,8 @@ __kernel void GeneratePerspectiveRays(__global Ray* rays,
                     const float4 cam_up,
                     const float4 cam_zcap,
                     int width,
-                    int height)
+                    int height,
+					__global int* numrays)
 {
     int2 globalid;
     globalid.x  = get_global_id(0);
@@ -147,6 +148,8 @@ __kernel void GeneratePerspectiveRays(__global Ray* rays,
 		light_col[k].x = 1.0f;
 		light_col[k].y = 1.0f;
 		light_col[k].z = 1.0f;
+
+		atomic_inc(numrays);
     }
 }
 
@@ -161,7 +164,8 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
                 //intersection
                 __global Intersection* isect,
                 int width,
-                int height)
+                int height,
+				__global int* numrays)
 {
     int2 globalid;
     globalid.x  = get_global_id(0);
@@ -183,6 +187,9 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 			float eta = 1.0f / ior[ind / 3 + prim_id];
 
 			if (eta != 1.0f) {
+
+				// Increment number of rays
+				atomic_inc(numrays);
 
 				// compute normal at intersection point
 			    float4 norm = ConvertFromBarycentric3(normals + ind*3, ids + ind, prim_id, isect[k].uvwt);
@@ -235,6 +242,9 @@ __kernel void GenerateSecondaryRays(__global Ray* rays,
 
 				//Offset new ray origin
 				rays[k].o.xyz += EPSILON * rays[k].d.xyz;
+
+				// Increment number of rays
+				atomic_inc(numrays);
 
 			} else {
 				//Set ray to inactive
